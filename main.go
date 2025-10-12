@@ -28,7 +28,7 @@ Usage: %s [OPTION]... EXECUTABLE
 `
 
 	RegexSection = `^\[([^]]+)\]\s*$`
-	RegexUsage   = `[Uu]sage(:| of) (.*)$`
+	RegexUsage   = `[Uu]sage(:| of) (?U:(.*)):?$`
 	RegexFlag    = `^  -((\w)\t(.*)|([-\w]+) (.+)|[-\w]+)$`
 )
 

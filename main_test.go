@@ -26,6 +26,12 @@ func TestParseUsage(t *testing.T) {
 			false,
 		},
 		{
+			"go flag default",
+			"Usage of gohelp2man:",
+			"gohelp2man",
+			true,
+		},
+		{
 			"custom GNU-like",
 			"Usage: gohelp2man [OPTION]... EXECUTABLE",
 			"gohelp2man [OPTION]... EXECUTABLE",
