@@ -1,0 +1,14 @@
+[NAME]
+gohelp2man - generate a simple manual page for Go programs
+
+[AUTHOR]
+Written by Nicolas Peugnet.
+
+[REPORTING BUGS]
+Use the issue tracker at <https://github.com/n-peugnet/gohelp2man>.
+
+[COPYRIGHT]
+Copyright (C) 2025 Nicolas Peugnet <nicolas@club1.fr>
+License GPLv2+: GNU GPL version 2 or later <https://gnu.org/licenses/gpl.html>.
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
