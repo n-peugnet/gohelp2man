@@ -65,19 +65,20 @@ func NewHelp(name string, help io.Reader) *Help {
 	}
 }
 
-func (h *Help) parseUsage() string {
+func (h *Help) parseUsage() (usage string, found bool) {
 	line := h.scanner.Text()
 	m := regexUsage.FindStringSubmatch(line)
 	if m != nil {
-		return m[2]
+		return m[2], true
 	}
-	return ""
+	return "", false
 }
 
-func (h *Help) parseFlag() (f *Flag) {
+func (h *Help) parseFlag() (f *Flag, found bool) {
 	line := h.scanner.Text()
 	m := regexFlag.FindStringSubmatch(line)
-	if m != nil {
+	found = m != nil
+	if found {
 		f = new(Flag)
 		switch {
 		case m[2] != "":
@@ -101,11 +102,11 @@ func (h *Help) parseFlag() (f *Flag) {
 func (h *Help) parse() error {
 	description := strings.Builder{}
 	for h.scanner.Scan() {
-		if u := h.parseUsage(); u != "" {
+		if u, found := h.parseUsage(); found {
 			h.Usage = u
 			continue
 		}
-		if f := h.parseFlag(); f != nil {
+		if f, found := h.parseFlag(); found {
 			h.Flags = append(h.Flags, f)
 			continue
 		}
