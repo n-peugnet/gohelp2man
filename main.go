@@ -113,7 +113,7 @@ func (h *Help) parse() error {
 		description.Write(h.scanner.Bytes())
 		description.WriteString("\n")
 	}
-	h.Description = description.String()
+	h.Description = strings.TrimSpace(description.String())
 	return h.scanner.Err()
 }
 

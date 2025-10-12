@@ -135,3 +135,74 @@ func TestParseFlag(t *testing.T) {
 		})
 	}
 }
+
+func TestParse(t *testing.T) {
+	cases := []struct {
+		name string
+		val  string
+		help *Help
+		err  string
+	}{
+		{
+			name: "empty string",
+			val:  "",
+			help: &Help{},
+		},
+		{
+			name: "description before usage",
+			val: `A test help message.
+
+Usage: test [OPTION]... ARG
+`,
+			help: &Help{
+				Usage:       "test [OPTION]... ARG",
+				Description: "A test help message.",
+			},
+		},
+		{
+			name: "description after usage",
+			val: `Usage: test [OPTION]... ARG
+
+A test help message.
+`,
+			help: &Help{
+				Usage:       "test [OPTION]... ARG",
+				Description: "A test help message.",
+			},
+		},
+		{
+			name: "description after flags",
+			val: `Usage: test [OPTION]... ARG
+  -h	Show help.
+
+A test help message.
+`,
+			help: &Help{
+				Usage:       "test [OPTION]... ARG",
+				Description: "A test help message.",
+				Flags:       []*Flag{{"h", "", "Show help."}},
+			},
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			help := NewHelp("", strings.NewReader(c.val))
+			err := help.parse()
+			if c.err != "" {
+				if !strings.Contains(err.Error(), c.err) {
+					t.Fatalf("expected error to contain %q, got %q", c.err, err)
+				}
+				return
+			}
+			if help.Usage != c.help.Usage {
+				t.Errorf("expected usage:\n%v\ngot:\n%v", c.help.Usage, help.Usage)
+			}
+			if help.Description != c.help.Description {
+				t.Errorf("expected description:\n%v\ngot:\n%v", c.help.Description, help.Description)
+			}
+			if !reflect.DeepEqual(c.help.Flags, help.Flags) {
+				t.Errorf("expected flags:\n%v\ngot:\n%v", c.help.Flags, help.Flags)
+			}
+		})
+	}
+}
