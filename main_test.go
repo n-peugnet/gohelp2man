@@ -206,3 +206,32 @@ A test help message.
 		})
 	}
 }
+
+func TestWriteSynopsis(t *testing.T) {
+	cases := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{"basic", "test [OPTION]... [ARGUMENT]...", `\fBtest\fR [\fIOPTION\fR]... [\fIARGUMENT\fR]...`},
+		{"non-closed brackets", "test [argument", `\fBtest\fR [argument`},
+		{"end with lbracket", "test argument[", `\fBtest\fR argument[`},
+		{"end with rbracket", "test argument]", `\fBtest\fR argument]`},
+		{"single bracketed arg", "test [argument]", `\fBtest\fR [\fIargument\fR]`},
+		{"no args", "test", `\fBtest\fR`},
+		{"no args with space", "test ", `\fBtest\fR`},
+		{"empty", "", `\fB\fR`},
+		{"single space", "", `\fB\fR`},
+		{"starts with space", " test args", `\fBtest\fR args`},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			w := &strings.Builder{}
+			writeSynopsis(w, c.input)
+			actual := strings.TrimSuffix(w.String(), "\n")
+			if actual != c.expected {
+				t.Fatalf("expected:\n%s\ngot:\n%s", c.expected, actual)
+			}
+		})
+	}
+}
