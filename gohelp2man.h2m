@@ -8,7 +8,10 @@ Written by Nicolas Peugnet.
 Use the issue tracker at <https://github.com/n-peugnet/gohelp2man>.
 
 [COPYRIGHT]
-Copyright (C) 2025 Nicolas Peugnet <nicolas@club1.fr>
+Copyright \(co 2025 Nicolas Peugnet <nicolas@club1.fr>
+.br
 License GPLv2+: GNU GPL version 2 or later <https://gnu.org/licenses/gpl.html>.
+.br
 This is free software: you are free to change and redistribute it.
+.br
 There is NO WARRANTY, to the extent permitted by law.

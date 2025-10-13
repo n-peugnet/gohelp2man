@@ -40,7 +40,7 @@ func TestParseUsage(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			help := NewHelp("test", strings.NewReader(c.val))
+			help := NewHelp(strings.NewReader(c.val))
 			help.scanner.Scan()
 			f, found := help.parseUsage()
 			if found != c.found {
@@ -123,7 +123,7 @@ func TestParseFlag(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			help := NewHelp("test", strings.NewReader(c.val))
+			help := NewHelp(strings.NewReader(c.val))
 			help.scanner.Scan()
 			f, found := help.parseFlag()
 			if found != c.found {
@@ -186,7 +186,7 @@ A test help message.
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			help := NewHelp("", strings.NewReader(c.val))
+			help := NewHelp(strings.NewReader(c.val))
 			err := help.parse()
 			if c.err != "" {
 				if !strings.Contains(err.Error(), c.err) {

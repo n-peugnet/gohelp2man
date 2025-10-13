@@ -15,9 +15,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/muesli/mango"
-	"github.com/muesli/roff"
 )
 
 const (
@@ -50,7 +47,6 @@ func (f *Flag) String() string {
 }
 
 type Help struct {
-	Name        string
 	Usage       string
 	Description string
 	Flags       []*Flag
@@ -58,9 +54,8 @@ type Help struct {
 	scanner *bufio.Scanner
 }
 
-func NewHelp(name string, help io.Reader) *Help {
+func NewHelp(help io.Reader) *Help {
 	return &Help{
-		Name:    name,
 		scanner: bufio.NewScanner(help),
 	}
 }
@@ -117,49 +112,31 @@ func (h *Help) parse() error {
 	return h.scanner.Err()
 }
 
-func (h *Help) toCommand() *mango.Command {
-	cmd := mango.NewCommand(h.Name, "", h.Usage)
-	for _, f := range h.Flags {
-		name := f.Name
-		if f.Arg != "" {
-			name += " " + f.Arg
-		}
-		err := cmd.AddFlag(mango.Flag{
-			Name:  name,
-			Usage: f.Usage,
-		})
-		if err != nil {
-			panic(err)
-		}
-	}
-	return cmd
-}
-
-// BuilderWrapper is a wrapper of [mango.Builder] that allows to customize its
-// output. Here are the list of its features:
-//   - respect SOURCE_DATE_EPOCH environment variable.
-//   - customise the manual name
-type BuilderWrapper struct {
-	mango.Builder
-}
-
-func (b BuilderWrapper) Heading(section uint, title, description string, ts time.Time) {
+func now() time.Time {
 	if epoch := os.Getenv("SOURCE_DATE_EPOCH"); epoch != "" {
 		unixEpoch, err := strconv.ParseInt(epoch, 10, 64)
 		if err != nil {
 			panic("invalid SOURCE_DATE_EPOCH: " + err.Error())
 		}
-		ts = time.Unix(unixEpoch, 0)
+		return time.Unix(unixEpoch, 0)
+	} else {
+		return time.Now()
 	}
-	switch section {
-	case 8:
-		description = "System Administration Utilities"
-	case 6:
-		description = "Games"
-	default:
-		description = "User Commands"
-	}
-	b.Builder.Heading(section, title, description, ts)
+}
+
+var KnownSections = [12]string{
+	"NAME",
+	"SYNOPSIS",
+	"DESCRIPTION",
+	"OPTIONS",
+	// Other
+	"ENVIRONMENT",
+	"FILES",
+	"EXAMPLES",
+	"AUTHOR",
+	"REPORTING BUGS",
+	"COPYRIGHT",
+	"SEE ALSO",
 }
 
 type Section struct {
@@ -168,13 +145,14 @@ type Section struct {
 }
 
 type Include struct {
-	Name        string
-	Description string
-	Sections    []*Section
+	Name          string
+	Description   string
+	Sections      map[string]*Section
+	OtherSections []*Section
 }
 
 func parseInclude(path string) (*Include, error) {
-	i := &Include{}
+	i := &Include{Sections: make(map[string]*Section)}
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -184,14 +162,21 @@ func parseInclude(path string) (*Include, error) {
 	finaliseSection := func() error {
 		if s != nil {
 			s.Text = strings.TrimSpace(text.String())
-			if s.Title == "NAME" {
-				n, d, ok := strings.Cut(s.Text, " - ")
-				if !ok {
-					return fmt.Errorf("invalid [name] section")
-				}
-				i.Name, i.Description = n, d
-			} else {
-				i.Sections = append(i.Sections, s)
+			switch s.Title {
+			case "NAME",
+				"SYNOPSIS",
+				"DESCRIPTION",
+				"OPTIONS",
+				"ENVIRONMENT",
+				"FILES",
+				"EXAMPLES",
+				"AUTHOR",
+				"REPORTING BUGS",
+				"COPYRIGHT",
+				"SEE ALSO":
+				i.Sections[s.Title] = s
+			default:
+				i.OtherSections = append(i.OtherSections, s)
 			}
 		}
 		text.Reset()
@@ -228,6 +213,35 @@ func getHelp(exe string) ([]byte, error) {
 		return nil, fmt.Errorf("run %s: empty output", cmd)
 	}
 	return out, err
+}
+
+// writeSynopsis formats a synopsis line by writing the command name in bold
+// and the arguments inside brackets in italic.
+func writeSynopsis(w io.Writer, synopsis string) {
+	name, args, found := strings.Cut(strings.TrimSpace(synopsis), " ")
+	fmt.Fprintf(w, "\\fB%s\\fR", name)
+	if found {
+		fmt.Fprint(w, " ")
+	}
+	for {
+		lBracket := strings.Index(args, "[")
+		if lBracket == -1 {
+			fmt.Fprint(w, args)
+			break
+		}
+		fmt.Fprint(w, args[:lBracket])
+		args = args[lBracket:]
+		rBracket := strings.Index(args, "]")
+		if rBracket == -1 {
+			fmt.Fprint(w, args)
+			break
+		}
+		fmt.Fprint(w, "[")
+		fmt.Fprintf(w, "\\fI%s\\fR", args[1:rBracket])
+		fmt.Fprint(w, "]")
+		args = args[rBracket+1:]
+	}
+	fmt.Fprintln(w)
 }
 
 func main() {
@@ -272,9 +286,9 @@ func main() {
 		os.Exit(2)
 	}
 
-	var include *Include
-	var err error
+	include := &Include{}
 	if flagInclude != "" {
+		var err error
 		include, err = parseInclude(flagInclude)
 		if err != nil {
 			l.Fatalln("parse include:", err)
@@ -285,28 +299,82 @@ func main() {
 	if err != nil {
 		l.Fatalln("get help:", err)
 	}
-	help := NewHelp(filepath.Base(exe), bytes.NewBuffer(out))
+	help := NewHelp(bytes.NewBuffer(out))
 	err = help.parse()
 	if err != nil {
 		l.Fatalln("parse output:", err)
 	}
-	cmd := help.toCommand()
 
-	description := "manual page for " + cmd.Name
-	if include != nil && include.Name != "" {
-		cmd.Name = include.Name
-		description = include.Description
+	name := filepath.Base(exe)
+	description := "manual page for " + name
+	if s, found := include.Sections["NAME"]; found {
+		n, d, ok := strings.Cut(s.Text, " - ")
+		if !ok {
+			l.Fatalf("invalid [name] section %q", s.Text)
+		}
+		if i := strings.IndexAny(n, " \t\n\r"); i != -1 {
+			l.Fatalf("illegal character %q in program name: %q", n[i], n)
+		}
+		name, description = n, d
 	}
 	if flagName != "" {
 		description = flagName
 	}
-	page := mango.NewManPage(flagSection, cmd.Name, description)
-	page.WithLongDescription(help.Description)
-	page.Root = *cmd
-	if include != nil {
-		for _, s := range include.Sections {
-			page.WithSection(s.Title, s.Text)
+
+	b := bufio.NewWriter(os.Stdout)
+
+	// Write title
+	fmt.Fprintf(b, ".TH %s %v %q %q\n",
+		strings.ToUpper(name), flagSection, now().Format("2006-01-02"), name,
+	)
+
+	// Write NAME section
+	fmt.Fprintf(b, ".SH NAME\n%v \\- %v\n", name, description)
+
+	// Write SYNOPSIS section
+	fmt.Fprintln(b, ".SH SYNOPSIS")
+	if s, found := include.Sections["SYNOPSIS"]; found {
+		fmt.Fprintln(b, s.Text)
+	} else if help.Usage != "" {
+		writeSynopsis(b, help.Usage)
+	} else {
+		fmt.Fprintf(b, "\\fB%s\\fR [\\fIOPTION\\fR]... [\\fIARGUMENT\\fR]...\n", name)
+	}
+
+	// Write DESCRIPTION section
+	if s, found := include.Sections["DESCRIPTION"]; found {
+		fmt.Fprintln(b, s.Text)
+	}
+	if help.Description != "" {
+		fmt.Fprintf(b, ".SH DESCRIPTION\n%s\n", help.Description)
+	}
+
+	// Write OPTIONS section
+	fmt.Fprint(b, ".SH OPTIONS\n")
+	if s, found := include.Sections["OPTIONS"]; found {
+		fmt.Fprintln(b, s.Text)
+	}
+	for _, f := range help.Flags {
+		if f.Arg != "" {
+			fmt.Fprintf(b, ".TP\n\\fB\\-%s\\fR %s\n", f.Name, f.Arg)
+		} else {
+			fmt.Fprintf(b, ".TP\n\\fB\\-%s\\fR\n", f.Name)
+		}
+		fmt.Fprintln(b, f.Usage)
+	}
+
+	// Write other included sections
+	for _, s := range include.OtherSections {
+		fmt.Fprintf(b, ".SH %s\n%s\n", s.Title, s.Text)
+	}
+
+	// Write last known sections
+	for _, title := range KnownSections[4:] {
+		if s, found := include.Sections[title]; found {
+			fmt.Fprintf(b, ".SH %s\n%s\n", s.Title, s.Text)
 		}
 	}
-	fmt.Println(page.Build(BuilderWrapper{roff.NewDocument()}))
+
+	// Print man page
+	b.Flush()
 }
