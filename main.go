@@ -15,6 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, see <https://www.gnu.org/licenses/>.
 
+//go:generate go build
+//go:generate go tool gohelp2man -include=gohelp2man.h2m -output=gohelp2man.1 ./gohelp2man
+
 package main
 
 import (
