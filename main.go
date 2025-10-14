@@ -139,7 +139,6 @@ func (h *Help) parse() error {
 		description.WriteString("\n")
 	}
 	h.Description = strings.TrimSpace(description.String())
-	h.Description = strings.ReplaceAll(h.Description, "\n\n", "\n.PP\n")
 	return h.scanner.Err()
 }
 
@@ -246,29 +245,55 @@ func getHelp(exe string) ([]byte, error) {
 	return out, err
 }
 
+var escapeReplacer = strings.NewReplacer(
+	`-`, `\-`,
+	`\`, `\(rs`,
+	"\n\n", "\n.PP\n", // TODO: make this more robust
+)
+
+func e(v any) string {
+	return escapeReplacer.Replace(fmt.Sprint(v))
+}
+
+func efprint(w io.Writer, args ...any) (int, error) {
+	return escapeReplacer.WriteString(w, fmt.Sprint(args...))
+}
+
+func efprintln(w io.Writer, args ...any) (int, error) {
+	return escapeReplacer.WriteString(w, fmt.Sprintln(args...))
+}
+
+func efprintf(w io.Writer, format string, args ...any) (int, error) {
+	eargs := make([]any, len(args))
+	for i, arg := range args {
+		eargs[i] = e(arg)
+	}
+	return fmt.Fprintf(w, format, eargs...)
+}
+
 // writeSynopsis formats a synopsis line by writing the command name in bold
 // and the arguments inside brackets in italic.
 func writeSynopsis(w io.Writer, synopsis string) {
 	name, args, found := strings.Cut(strings.TrimSpace(synopsis), " ")
-	fmt.Fprintf(w, "\\fB%s\\fR", name)
+	efprintf(w, "\\fB%s\\fR", name)
 	if found {
 		fmt.Fprint(w, " ")
 	}
 	for {
 		lBracket := strings.Index(args, "[")
 		if lBracket == -1 {
-			fmt.Fprint(w, args)
+			efprint(w, args)
 			break
 		}
-		fmt.Fprint(w, args[:lBracket])
+		efprint(w, args[:lBracket])
 		args = args[lBracket:]
 		rBracket := strings.Index(args, "]")
 		if rBracket == -1 {
-			fmt.Fprint(w, args)
+			efprint(w, args)
 			break
 		}
 		fmt.Fprint(w, "[")
-		fmt.Fprintf(w, "\\fI%s\\fR", args[1:rBracket])
+		efprintf(w, "\\fI%s\\fR", args[1:rBracket])
 		fmt.Fprint(w, "]")
 		args = args[rBracket+1:]
 	}
@@ -368,11 +393,11 @@ func main() {
 
 	// Write title
 	fmt.Fprintf(b, ".TH %s %v %q %q\n",
-		strings.ToUpper(name), flagSection, now().Format("2006-01-02"), name,
+		e(strings.ToUpper(name)), flagSection, now().Format("2006-01-02"), name,
 	)
 
 	// Write NAME section
-	fmt.Fprintf(b, ".SH NAME\n%v \\- %v\n", name, description)
+	efprintf(b, ".SH NAME\n%v \\- %v\n", name, description)
 
 	// Write SYNOPSIS section
 	fmt.Fprintln(b, ".SH SYNOPSIS")
@@ -381,7 +406,7 @@ func main() {
 	} else if help.Usage != "" {
 		writeSynopsis(b, help.Usage)
 	} else {
-		fmt.Fprintf(b, "\\fB%s\\fR [\\fIOPTION\\fR]... [\\fIARGUMENT\\fR]...\n", name)
+		efprintf(b, "\\fB%s\\fR [\\fIOPTION\\fR]... [\\fIARGUMENT\\fR]...\n", name)
 	}
 
 	// Write DESCRIPTION section
@@ -389,7 +414,7 @@ func main() {
 		fmt.Fprintln(b, s.Text)
 	}
 	if help.Description != "" {
-		fmt.Fprintf(b, ".SH DESCRIPTION\n%s\n", help.Description)
+		efprintf(b, ".SH DESCRIPTION\n%s\n", help.Description)
 	}
 
 	// Write OPTIONS section
@@ -399,11 +424,11 @@ func main() {
 	}
 	for _, f := range help.Flags {
 		if f.Arg != "" {
-			fmt.Fprintf(b, ".TP\n\\fB\\-%s\\fR %s\n", f.Name, f.Arg)
+			efprintf(b, ".TP\n\\fB\\-%s\\fR %s\n", f.Name, f.Arg)
 		} else {
-			fmt.Fprintf(b, ".TP\n\\fB\\-%s\\fR\n", f.Name)
+			efprintf(b, ".TP\n\\fB\\-%s\\fR\n", f.Name)
 		}
-		fmt.Fprintln(b, f.Usage)
+		efprintln(b, f.Usage)
 	}
 
 	// Write other included sections
