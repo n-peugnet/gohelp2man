@@ -136,6 +136,7 @@ func (h *Help) parse() error {
 		description.WriteString("\n")
 	}
 	h.Description = strings.TrimSpace(description.String())
+	h.Description = strings.ReplaceAll(h.Description, "\n\n", "\n.PP\n")
 	return h.scanner.Err()
 }
 
