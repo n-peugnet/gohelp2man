@@ -56,6 +56,7 @@ Usage: %s [OPTION]... EXECUTABLE
 
 	RegexSection = `^\[([^]]+)\]\s*$`
 	RegexUsage   = `[Uu]sage(:| of) (?U:(.*)):?$`
+	RegexHeader  = `^(\w.*):\s*$`
 	RegexFlag    = `^  -((\w)\t(.*)|([-\w]+) (.+)|[-\w]+)$`
 )
 
@@ -63,6 +64,7 @@ var (
 	l            = log.New(os.Stderr, Name+": ", 0)
 	regexSection = regexp.MustCompile(RegexSection)
 	regexUsage   = regexp.MustCompile(RegexUsage)
+	regexHeader  = regexp.MustCompile(RegexHeader)
 	regexFlag    = regexp.MustCompile(RegexFlag)
 )
 
@@ -99,6 +101,15 @@ func (h *Help) parseUsage() (usage string, found bool) {
 	return "", false
 }
 
+func (h *Help) parseHeader() (header string, found bool) {
+	line := h.scanner.Text()
+	m := regexHeader.FindStringSubmatch(line)
+	if m != nil {
+		return m[1], true
+	}
+	return "", false
+}
+
 func (h *Help) parseFlag() (f *Flag, found bool) {
 	line := h.scanner.Text()
 	m := regexFlag.FindStringSubmatch(line)
@@ -129,10 +140,21 @@ func (h *Help) parse() error {
 	for h.scanner.Scan() {
 		if u, found := h.parseUsage(); found {
 			h.Usage = u
+			// TODO: scan lines until they do not look like usage lines
+			continue
+		}
+		if h, found := h.parseHeader(); found {
+			if strings.EqualFold(h, "OPTIONS") || strings.EqualFold(h, "FLAGS") {
+				continue
+			}
+			description.WriteString(".SS ")
+			description.WriteString(h)
+			description.WriteString(":\n")
 			continue
 		}
 		if f, found := h.parseFlag(); found {
 			h.Flags = append(h.Flags, f)
+			// TODO: scan lines until they do not look like flag descriptions
 			continue
 		}
 		description.Write(h.scanner.Bytes())
