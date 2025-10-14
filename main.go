@@ -282,13 +282,15 @@ func main() {
 		flagHelp    bool
 		flagInclude string
 		flagName    string
+		flagOutput  string
 		flagSection uint
 		flagVersion bool
 	)
 	cli.BoolVar(&flagHelp, "help", false, "Show this help and exit.")
 	cli.StringVar(&flagInclude, "include", "", "Include material from `FILE`.")
-	cli.StringVar(&flagName, "name", "", "description for the NAME paragraph.")
-	cli.UintVar(&flagSection, "section", 1, "section number for manual page (1, 6, 8).")
+	cli.StringVar(&flagName, "name", "", "Description for the NAME paragraph.")
+	cli.StringVar(&flagOutput, "output", "", "Send output to `FILE` rather than stdout.")
+	cli.UintVar(&flagSection, "section", 1, "Section number for manual page (1, 6, 8).")
 	cli.BoolVar(&flagVersion, "version", false, "Show version number and exit.")
 	cli.Parse(os.Args[1:])
 
@@ -349,7 +351,17 @@ func main() {
 		description = flagName
 	}
 
-	b := bufio.NewWriter(os.Stdout)
+	var w io.Writer
+	if flagOutput != "" {
+		file, err := os.Create(flagOutput)
+		if err != nil {
+			l.Fatalln("create output file:", err)
+		}
+		w = bufio.NewWriter(file)
+	} else {
+		w = os.Stdout
+	}
+	b := bufio.NewWriter(w)
 
 	// Write title
 	fmt.Fprintf(b, ".TH %s %v %q %q\n",
