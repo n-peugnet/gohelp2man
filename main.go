@@ -68,6 +68,47 @@ var (
 	regexFlag    = regexp.MustCompile(RegexFlag)
 )
 
+var KnownSections = [12]string{
+	"NAME",
+	"SYNOPSIS",
+	"DESCRIPTION",
+	"OPTIONS",
+	// Other
+	"ENVIRONMENT",
+	"FILES",
+	"EXAMPLES",
+	"AUTHOR",
+	"REPORTING BUGS",
+	"COPYRIGHT",
+	"SEE ALSO",
+}
+
+func findKnownSection(s string) (title string, found bool) {
+	title = strings.ToUpper(s)
+	switch title {
+	case "OPTIONS", "FLAGS":
+		title = "OPTIONS"
+		fallthrough
+	case "NAME",
+		"SYNOPSIS",
+		"DESCRIPTION",
+		"ENVIRONMENT",
+		"FILES",
+		"EXAMPLES",
+		"AUTHOR",
+		"REPORTING BUGS",
+		"COPYRIGHT",
+		"SEE ALSO":
+		found = true
+	}
+	return
+}
+
+type Section struct {
+	Title string
+	Text  string
+}
+
 type Flag struct {
 	Name  string
 	Arg   string
@@ -82,13 +123,15 @@ type Help struct {
 	Usage       string
 	Description string
 	Flags       []*Flag
+	Sections    map[string]*Section
 
 	scanner *bufio.Scanner
 }
 
 func NewHelp(help io.Reader) *Help {
 	return &Help{
-		scanner: bufio.NewScanner(help),
+		Sections: make(map[string]*Section),
+		scanner:  bufio.NewScanner(help),
 	}
 }
 
@@ -136,20 +179,33 @@ func (h *Help) parseFlag() (f *Flag, found bool) {
 }
 
 func (h *Help) parse() error {
-	description := strings.Builder{}
+	var s *Section
+	var text strings.Builder
+	finaliseSection := func() {
+		if s != nil {
+			s.Text = strings.TrimSpace(text.String())
+		} else {
+			h.Description = strings.TrimSpace(text.String())
+		}
+		text.Reset()
+	}
+
 	for h.scanner.Scan() {
 		if u, found := h.parseUsage(); found {
 			h.Usage = u
 			// TODO: scan lines until they do not look like usage lines
 			continue
 		}
-		if h, found := h.parseHeader(); found {
-			if strings.EqualFold(h, "OPTIONS") || strings.EqualFold(h, "FLAGS") {
-				continue
+		if hr, found := h.parseHeader(); found {
+			if title, found := findKnownSection(hr); found {
+				finaliseSection()
+				s = &Section{Title: hr}
+				h.Sections[title] = s
+			} else {
+				text.WriteString(".SS ")
+				text.WriteString(hr)
+				text.WriteString(":\n")
 			}
-			description.WriteString(".SS ")
-			description.WriteString(h)
-			description.WriteString(":\n")
 			continue
 		}
 		if f, found := h.parseFlag(); found {
@@ -157,43 +213,11 @@ func (h *Help) parse() error {
 			// TODO: scan lines until they do not look like flag descriptions
 			continue
 		}
-		description.Write(h.scanner.Bytes())
-		description.WriteString("\n")
+		text.Write(h.scanner.Bytes())
+		text.WriteString("\n")
 	}
-	h.Description = strings.TrimSpace(description.String())
+	finaliseSection()
 	return h.scanner.Err()
-}
-
-func now() time.Time {
-	if epoch := os.Getenv("SOURCE_DATE_EPOCH"); epoch != "" {
-		unixEpoch, err := strconv.ParseInt(epoch, 10, 64)
-		if err != nil {
-			panic("invalid SOURCE_DATE_EPOCH: " + err.Error())
-		}
-		return time.Unix(unixEpoch, 0)
-	} else {
-		return time.Now()
-	}
-}
-
-var KnownSections = [12]string{
-	"NAME",
-	"SYNOPSIS",
-	"DESCRIPTION",
-	"OPTIONS",
-	// Other
-	"ENVIRONMENT",
-	"FILES",
-	"EXAMPLES",
-	"AUTHOR",
-	"REPORTING BUGS",
-	"COPYRIGHT",
-	"SEE ALSO",
-}
-
-type Section struct {
-	Title string
-	Text  string
 }
 
 type Include struct {
@@ -209,30 +233,19 @@ func parseInclude(path string) (*Include, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	var s *Section
 	var text strings.Builder
-	finaliseSection := func() error {
+	finaliseSection := func() {
 		if s != nil {
 			s.Text = strings.TrimSpace(text.String())
-			switch s.Title {
-			case "NAME",
-				"SYNOPSIS",
-				"DESCRIPTION",
-				"OPTIONS",
-				"ENVIRONMENT",
-				"FILES",
-				"EXAMPLES",
-				"AUTHOR",
-				"REPORTING BUGS",
-				"COPYRIGHT",
-				"SEE ALSO":
-				i.Sections[s.Title] = s
-			default:
+			if title, found := findKnownSection(s.Title); found {
+				i.Sections[title] = s
+			} else {
 				i.OtherSections = append(i.OtherSections, s)
 			}
 		}
 		text.Reset()
-		return nil
 	}
 
 	scanner := bufio.NewScanner(bufio.NewReader(file))
@@ -240,18 +253,14 @@ func parseInclude(path string) (*Include, error) {
 		line := scanner.Text()
 		m := regexSection.FindStringSubmatch(line)
 		if m != nil {
-			if err := finaliseSection(); err != nil {
-				return nil, err
-			}
-			s = &Section{Title: strings.ToUpper(m[1])}
+			finaliseSection()
+			s = &Section{Title: m[1]}
 			continue
 		}
 		text.WriteString(line)
 		text.WriteString("\n")
 	}
-	if err := finaliseSection(); err != nil {
-		return nil, err
-	}
+	finaliseSection()
 	return i, scanner.Err()
 }
 
@@ -265,6 +274,18 @@ func getHelp(exe string) ([]byte, error) {
 		return nil, fmt.Errorf("run %s: empty output", cmd)
 	}
 	return out, err
+}
+
+func now() time.Time {
+	if epoch := os.Getenv("SOURCE_DATE_EPOCH"); epoch != "" {
+		unixEpoch, err := strconv.ParseInt(epoch, 10, 64)
+		if err != nil {
+			panic("invalid SOURCE_DATE_EPOCH: " + err.Error())
+		}
+		return time.Unix(unixEpoch, 0)
+	} else {
+		return time.Now()
+	}
 }
 
 var escapeReplacer = strings.NewReplacer(
@@ -453,6 +474,9 @@ func main() {
 	if s, found := include.Sections["OPTIONS"]; found {
 		fmt.Fprintln(b, s.Text)
 	}
+	if s, found := help.Sections["OPTIONS"]; found {
+		efprintln(b, s.Text)
+	}
 	for _, f := range help.Flags {
 		if f.Arg != "" {
 			efprintf(b, ".TP\n\\fB\\-%s\\fR %s\n", f.Name, f.Arg)
@@ -471,6 +495,9 @@ func main() {
 	for _, title := range KnownSections[4:] {
 		if s, found := include.Sections[title]; found {
 			fmt.Fprintf(b, ".SH %s\n%s\n", s.Title, s.Text)
+		}
+		if s, found := help.Sections[title]; found {
+			efprintf(b, ".SH %s\n%s\n", s.Title, s.Text)
 		}
 	}
 
