@@ -58,6 +58,7 @@ Usage: %s [OPTION]... EXECUTABLE
 	RegexUsage   = `[Uu]sage(:| of) (?U:(.*)):?$`
 	RegexHeader  = `^(\w.*):\s*$`
 	RegexFlag    = `^  -((\w)\t(.*)|([-\w]+) (.+)|[-\w]+)$`
+	RegexFUsage  = `^  [^-].*$`
 )
 
 var (
@@ -66,6 +67,7 @@ var (
 	regexUsage   = regexp.MustCompile(RegexUsage)
 	regexHeader  = regexp.MustCompile(RegexHeader)
 	regexFlag    = regexp.MustCompile(RegexFlag)
+	regexFUsage  = regexp.MustCompile(RegexFUsage)
 )
 
 var KnownSections = [12]string{
@@ -160,22 +162,42 @@ func (h *Help) parseFlag() (f *Flag, found bool) {
 	if found {
 		f = new(Flag)
 		switch {
-		case m[2] != "":
+		case m[2] != "": // short flag
 			f.Name = m[2]
 			f.Usage = m[3]
 			return
-		case m[4] != "":
+		case m[4] != "": // flag with arg
 			f.Name = m[4]
 			f.Arg = m[5]
 		default:
 			f.Name = m[1]
 		}
-		if !h.scanner.Scan() {
-			panic("missing description for long flag: " + f.Name)
-		}
-		f.Usage = strings.TrimSpace(h.scanner.Text())
 	}
 	return
+}
+
+func (h *Help) parseFlags() {
+	for {
+		if f, found := h.parseFlag(); found {
+			var text strings.Builder
+			if f.Usage != "" {
+				text.WriteString(f.Usage)
+			}
+			h.Flags = append(h.Flags, f)
+			for h.scanner.Scan() {
+				line := h.scanner.Text()
+				if regexFUsage.MatchString(line) {
+					text.WriteString(" ")
+					text.WriteString(strings.TrimSpace(line))
+				} else {
+					break
+				}
+			}
+			f.Usage = strings.TrimSpace(text.String())
+		} else {
+			break
+		}
+	}
 }
 
 func (h *Help) parse() error {
@@ -208,11 +230,7 @@ func (h *Help) parse() error {
 			}
 			continue
 		}
-		if f, found := h.parseFlag(); found {
-			h.Flags = append(h.Flags, f)
-			// TODO: scan lines until they do not look like flag descriptions
-			continue
-		}
+		h.parseFlags()
 		text.Write(h.scanner.Bytes())
 		text.WriteString("\n")
 	}

@@ -53,7 +53,7 @@ func TestParseUsage(t *testing.T) {
 	}
 }
 
-func TestParseFlag(t *testing.T) {
+func TestParseFlags(t *testing.T) {
 	cases := []struct {
 		name  string
 		val   string
@@ -79,9 +79,24 @@ func TestParseFlag(t *testing.T) {
 			true,
 		},
 		{
+			"multi short",
+			`  -h	Show help
+    	and exit.`,
+			&Flag{"h", "", "Show help and exit."},
+			true,
+		},
+		{
 			"simple long",
 			`  -help
     	Show help and exit.`,
+			&Flag{"help", "", "Show help and exit."},
+			true,
+		},
+		{
+			"multi long",
+			`  -help
+    	Show help
+    	and exit.`,
 			&Flag{"help", "", "Show help and exit."},
 			true,
 		},
@@ -125,12 +140,19 @@ func TestParseFlag(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			help := NewHelp(strings.NewReader(c.val))
 			help.scanner.Scan()
-			f, found := help.parseFlag()
-			if found != c.found {
-				t.Errorf("expected found to be %v, got %v", c.found, found)
-			}
-			if !reflect.DeepEqual(c.flag, f) {
-				t.Fatalf("expected:\n%v\ngot:\n%v", c.flag, f)
+			help.parseFlags()
+			if c.found {
+				if len(help.Flags) == 0 {
+					t.Fatal("expected to get one flag, got none")
+				}
+				f := help.Flags[0]
+				if !reflect.DeepEqual(c.flag, f) {
+					t.Fatalf("expected:\n%v\ngot:\n%v", c.flag, f)
+				}
+			} else {
+				if len(help.Flags) != 0 {
+					t.Fatal("expected to get no flags, got ", help.Flags)
+				}
 			}
 		})
 	}
