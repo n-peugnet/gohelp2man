@@ -11,43 +11,57 @@ func TestParseUsage(t *testing.T) {
 		name  string
 		val   string
 		usage string
-		found bool
 	}{
 		{
 			"empty string",
 			"",
 			"",
-			false,
 		},
 		{
 			"short flag",
 			"  -h	Show help and exit.",
 			"",
-			false,
 		},
 		{
 			"go flag default",
 			"Usage of gohelp2man:",
-			"gohelp2man",
-			true,
+			"",
 		},
 		{
 			"custom GNU-like",
 			"Usage: gohelp2man [OPTION]... EXECUTABLE",
 			"gohelp2man [OPTION]... EXECUTABLE",
-			true,
+		},
+		{
+			"multiline GNU-like",
+			`Usage: ln [OPTION]... [-T] TARGET LINK_NAME
+  or:  ln [OPTION]... TARGET
+  or:  ln [OPTION]... TARGET... DIRECTORY
+  or:  ln [OPTION]... -t DIRECTORY TARGET...
+In the 1st form, create a link to TARGET with the name LINK_NAME.`,
+			`ln [OPTION]... [-T] TARGET LINK_NAME
+ln [OPTION]... TARGET
+ln [OPTION]... TARGET... DIRECTORY
+ln [OPTION]... -t DIRECTORY TARGET...`,
+		},
+		{
+			"multiline go-like",
+			`Usage of stringer:
+	stringer [flags] -type T [directory]
+	stringer [flags] -type T files... # Must be a single package
+For more information, see:
+	https://pkg.go.dev/golang.org/x/tools/cmd/stringer`,
+			`stringer [flags] -type T [directory]
+stringer [flags] -type T files... # Must be a single package`,
 		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			help := NewHelp(strings.NewReader(c.val))
 			help.scanner.Scan()
-			f, found := help.parseUsage()
-			if found != c.found {
-				t.Errorf("expected found to be %v, got %v", c.found, found)
-			}
-			if !reflect.DeepEqual(c.usage, f) {
-				t.Fatalf("expected:\n%v\ngot:\n%v", c.usage, f)
+			help.parseUsage()
+			if !reflect.DeepEqual(c.usage, help.Usage) {
+				t.Fatalf("expected:\n%v\ngot:\n%v", c.usage, help.Usage)
 			}
 		})
 	}
@@ -245,6 +259,14 @@ func TestWriteSynopsis(t *testing.T) {
 		{"empty", "", `\fB\fR`},
 		{"single space", "", `\fB\fR`},
 		{"starts with space", " test args", `\fBtest\fR args`},
+		{
+			"basic multiline",
+			`stringer [flags] -type T [directory]
+stringer [flags] -type T files...`,
+			`\fBstringer\fR [\fIflags\fR] \-type T [\fIdirectory\fR]
+.br
+\fBstringer\fR [\fIflags\fR] \-type T files...`,
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

@@ -56,6 +56,7 @@ Usage: %s [OPTION]... EXECUTABLE
 
 	RegexSection = `^\[([^]]+)\]\s*$`
 	RegexUsage   = `[Uu]sage(:| of) (?U:(.*)):?$`
+	RegexUsage2  = `^((\t|\s+or: )(.*)|  ([^-].*))$`
 	RegexHeader  = `^(\w.*):\s*$`
 	RegexFlag    = `^  -((\w)\t(.*)|([-\w]+) (.+)|[-\w]+)$`
 	RegexFUsage  = `^  [^-].*$`
@@ -65,6 +66,7 @@ var (
 	l            = log.New(os.Stderr, Name+": ", 0)
 	regexSection = regexp.MustCompile(RegexSection)
 	regexUsage   = regexp.MustCompile(RegexUsage)
+	regexUsage2  = regexp.MustCompile(RegexUsage2)
 	regexHeader  = regexp.MustCompile(RegexHeader)
 	regexFlag    = regexp.MustCompile(RegexFlag)
 	regexFUsage  = regexp.MustCompile(RegexFUsage)
@@ -137,13 +139,26 @@ func NewHelp(help io.Reader) *Help {
 	}
 }
 
-func (h *Help) parseUsage() (usage string, found bool) {
-	line := h.scanner.Text()
-	m := regexUsage.FindStringSubmatch(line)
+func (h *Help) parseUsage() {
+	var text strings.Builder
+	line := h.scanner.Bytes()
+	m := regexUsage.FindSubmatch(line)
 	if m != nil {
-		return m[2], true
+		if bytes.IndexRune(m[2], ' ') != -1 {
+			text.Write(m[2])
+		}
+		for h.scanner.Scan() {
+			m = regexUsage2.FindSubmatch(h.scanner.Bytes())
+			if m != nil {
+				text.WriteString("\n")
+				text.Write(bytes.TrimSpace(m[3]))
+				text.Write(bytes.TrimSpace(m[4]))
+			} else {
+				break
+			}
+		}
+		h.Usage = strings.TrimSpace(text.String())
 	}
-	return "", false
 }
 
 func (h *Help) parseHeader() (header string, found bool) {
@@ -213,11 +228,7 @@ func (h *Help) parse() error {
 	}
 
 	for h.scanner.Scan() {
-		if u, found := h.parseUsage(); found {
-			h.Usage = u
-			// TODO: scan lines until they do not look like usage lines
-			continue
-		}
+		h.parseUsage()
 		if hr, found := h.parseHeader(); found {
 			if title, found := findKnownSection(hr); found {
 				finaliseSection()
@@ -335,30 +346,37 @@ func efprintf(w io.Writer, format string, args ...any) (int, error) {
 // writeSynopsis formats a synopsis line by writing the command name in bold
 // and the arguments inside brackets in italic.
 func writeSynopsis(w io.Writer, synopsis string) {
-	name, args, found := strings.Cut(strings.TrimSpace(synopsis), " ")
-	efprintf(w, "\\fB%s\\fR", name)
-	if found {
-		fmt.Fprint(w, " ")
+	name, rest, found := strings.Cut(strings.TrimSpace(synopsis), " ")
+	if !found {
+		efprintf(w, "\\fB%s\\fR", name)
+		return
 	}
-	for {
-		lBracket := strings.Index(args, "[")
-		if lBracket == -1 {
-			efprint(w, args)
-			break
+	splits := strings.Split(rest, "\n"+name+" ")
+	for i, args := range splits {
+		if i != 0 {
+			fmt.Fprint(w, ".br\n")
 		}
-		efprint(w, args[:lBracket])
-		args = args[lBracket:]
-		rBracket := strings.Index(args, "]")
-		if rBracket == -1 {
-			efprint(w, args)
-			break
+		efprintf(w, "\\fB%s\\fR ", name)
+		for {
+			lBracket := strings.Index(args, "[")
+			if lBracket == -1 {
+				efprint(w, args)
+				break
+			}
+			efprint(w, args[:lBracket])
+			args = args[lBracket:]
+			rBracket := strings.Index(args, "]")
+			if rBracket == -1 {
+				efprint(w, args)
+				break
+			}
+			fmt.Fprint(w, "[")
+			efprintf(w, "\\fI%s\\fR", args[1:rBracket])
+			fmt.Fprint(w, "]")
+			args = args[rBracket+1:]
 		}
-		fmt.Fprint(w, "[")
-		efprintf(w, "\\fI%s\\fR", args[1:rBracket])
-		fmt.Fprint(w, "]")
-		args = args[rBracket+1:]
+		fmt.Fprintln(w)
 	}
-	fmt.Fprintln(w)
 }
 
 func main() {
