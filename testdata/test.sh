@@ -1,0 +1,2 @@
+#!/bin/sh
+cat $GOHELP2MAN_TESTCASE

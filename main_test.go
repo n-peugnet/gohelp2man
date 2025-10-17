@@ -1,6 +1,9 @@
 package main
 
 import (
+	"bytes"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -275,6 +278,41 @@ stringer [flags] -type T files...`,
 			actual := strings.TrimSuffix(w.String(), "\n")
 			if actual != c.expected {
 				t.Fatalf("expected:\n%s\ngot:\n%s", c.expected, actual)
+			}
+		})
+	}
+}
+
+func setup(t *testing.T) string {
+	t.Helper()
+	prevArgs := os.Args
+	t.Cleanup(func() { os.Args = prevArgs })
+	tmp := t.TempDir()
+	out := filepath.Join(tmp, "out")
+	os.Args = []string{"gohelp2man", "-output", out, "testdata/test.sh"}
+	return out
+}
+
+func TestFull(t *testing.T) {
+	cases := []string{
+		"basic",
+	}
+	for _, c := range cases {
+		t.Run(c, func(t *testing.T) {
+			out := setup(t)
+			t.Setenv("GOHELP2MAN_TESTCASE", filepath.Join("testdata", "test_full_"+c+".txt"))
+			t.Setenv("SOURCE_DATE_EPOCH", "0")
+			main()
+			expected, err := os.ReadFile(filepath.Join("testdata", "test_full_"+c+".1"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			actual, err := os.ReadFile(out)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !bytes.Equal(expected, actual) {
+				t.Errorf("expected:\n%s\ngot:\n%s", expected, actual)
 			}
 		})
 	}
