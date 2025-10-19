@@ -269,6 +269,18 @@ gohelp2man - generate a simple manual page for Go programs
 				},
 			}},
 		},
+		{
+			"single other section",
+			`[Other section]
+This is a section that is not known.
+`,
+			&Include{Sections: map[string]*Section{}, OtherSections: []*Section{
+				&Section{
+					Title: "OTHER SECTION",
+					Text:  "This is a section that is not known.",
+				},
+			}},
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

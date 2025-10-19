@@ -236,7 +236,7 @@ func (h *Help) parse() error {
 		if hr, found := h.parseHeader(); found {
 			if title, found := findKnownSection(hr); found {
 				finaliseSection()
-				s = &Section{Title: hr}
+				s = &Section{Title: title}
 				h.Sections[title] = s
 			} else {
 				text.WriteString(".SS ")
@@ -266,11 +266,6 @@ func parseInclude(r io.Reader) (*Include, error) {
 	finaliseSection := func() {
 		if s != nil {
 			s.Text = strings.TrimSpace(text.String())
-			if title, found := findKnownSection(s.Title); found {
-				i.Sections[title] = s
-			} else {
-				i.OtherSections = append(i.OtherSections, s)
-			}
 		}
 		text.Reset()
 	}
@@ -281,7 +276,13 @@ func parseInclude(r io.Reader) (*Include, error) {
 		m := regexSection.FindStringSubmatch(line)
 		if m != nil {
 			finaliseSection()
-			s = &Section{Title: m[1]}
+			title, found := findKnownSection(m[1])
+			s = &Section{Title: title}
+			if found {
+				i.Sections[title] = s
+			} else {
+				i.OtherSections = append(i.OtherSections, s)
+			}
 			continue
 		}
 		text.WriteString(line)
