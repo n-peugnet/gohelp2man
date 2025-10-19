@@ -246,6 +246,43 @@ A test help message.
 	}
 }
 
+func TestParseInclude(t *testing.T) {
+	cases := []struct {
+		name     string
+		input    string
+		expected *Include
+	}{
+		{
+			"empty",
+			"",
+			&Include{Sections: map[string]*Section{}},
+		},
+		{
+			"single known section",
+			`[NAME]
+gohelp2man - generate a simple manual page for Go programs
+`,
+			&Include{Sections: map[string]*Section{
+				"NAME": &Section{
+					Title: "NAME",
+					Text:  "gohelp2man - generate a simple manual page for Go programs",
+				},
+			}},
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			actual, err := parseInclude(strings.NewReader(c.input))
+			if err != nil {
+				t.Error(err)
+			}
+			if !reflect.DeepEqual(c.expected, actual) {
+				t.Fatalf("expected %v, got %v", c.expected, actual)
+			}
+		})
+	}
+}
+
 func TestWriteSynopsis(t *testing.T) {
 	cases := []struct {
 		name     string

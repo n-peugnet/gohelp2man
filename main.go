@@ -113,6 +113,10 @@ type Section struct {
 	Text  string
 }
 
+func (s *Section) String() string {
+	return fmt.Sprintf("{%q %q}", s.Title, s.Text)
+}
+
 type Flag struct {
 	Name  string
 	Arg   string
@@ -250,18 +254,12 @@ func (h *Help) parse() error {
 }
 
 type Include struct {
-	Name          string
-	Description   string
 	Sections      map[string]*Section
 	OtherSections []*Section
 }
 
-func parseInclude(path string) (*Include, error) {
+func parseInclude(r io.Reader) (*Include, error) {
 	i := &Include{Sections: make(map[string]*Section)}
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
 
 	var s *Section
 	var text strings.Builder
@@ -277,7 +275,7 @@ func parseInclude(path string) (*Include, error) {
 		text.Reset()
 	}
 
-	scanner := bufio.NewScanner(bufio.NewReader(file))
+	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		line := scanner.Text()
 		m := regexSection.FindStringSubmatch(line)
@@ -430,7 +428,11 @@ func main() {
 	include := &Include{}
 	if flagInclude != "" {
 		var err error
-		include, err = parseInclude(flagInclude)
+		f, err := os.Open(flagInclude)
+		if err != nil {
+			l.Fatalln("include file:", err)
+		}
+		include, err = parseInclude(bufio.NewReader(f))
 		if err != nil {
 			l.Fatalln("parse include:", err)
 		}
