@@ -222,6 +222,28 @@ A test help message.
 				Flags:       []*Flag{{"h", "", "Show help."}},
 			},
 		},
+		{
+			name: "options header",
+			val: `Text of the description.
+
+Options:
+  -h	Show help.
+`,
+			help: &Help{
+				Description: "Text of the description.",
+				Flags:       []*Flag{{"h", "", "Show help."}},
+				Sections: map[string]*Section{
+					"OPTIONS": &Section{Title: "OPTIONS"},
+				},
+			},
+		},
+		{
+			name: "unknown section header",
+			val: `Other section:
+Text of this section.
+`,
+			help: &Help{Description: ".SS Other section:\nText of this section."},
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -241,6 +263,12 @@ A test help message.
 			}
 			if !reflect.DeepEqual(c.help.Flags, help.Flags) {
 				t.Errorf("expected flags:\n%v\ngot:\n%v", c.help.Flags, help.Flags)
+			}
+			if c.help.Sections == nil {
+				c.help.Sections = make(map[string]*Section)
+			}
+			if !reflect.DeepEqual(c.help.Sections, help.Sections) {
+				t.Errorf("expected sections:\n%v\ngot:\n%v", c.help.Sections, help.Sections)
 			}
 		})
 	}
