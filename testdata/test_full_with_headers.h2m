@@ -1,0 +1,11 @@
+[NAME]
+test-command - this is a test command
+
+[Unknown section]
+This is another top level section
+
+[DESCRIPTION]
+This text should be prepended as a parapgraph and \fBunescaped\fR.
+
+[SEE ALSO]
+This section must be last.

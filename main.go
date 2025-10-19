@@ -128,10 +128,9 @@ func (f *Flag) String() string {
 }
 
 type Help struct {
-	Usage       string
-	Description string
-	Flags       []*Flag
-	Sections    map[string]*Section
+	Usage    string
+	Flags    []*Flag
+	Sections map[string]*Section
 
 	scanner *bufio.Scanner
 }
@@ -220,13 +219,12 @@ func (h *Help) parseFlags() {
 }
 
 func (h *Help) parse() error {
-	var s *Section
+	var s *Section = &Section{Title: "DESCRIPTION"}
 	var text strings.Builder
 	finaliseSection := func() {
-		if s != nil {
-			s.Text = strings.TrimSpace(text.String())
-		} else {
-			h.Description = strings.TrimSpace(text.String())
+		s.Text = strings.TrimSpace(text.String())
+		if s.Text != "" {
+			h.Sections[s.Title] = s
 		}
 		text.Reset()
 	}
@@ -237,7 +235,6 @@ func (h *Help) parse() error {
 			if title, found := findKnownSection(hr); found {
 				finaliseSection()
 				s = &Section{Title: title}
-				h.Sections[title] = s
 			} else {
 				text.WriteString(".SS ")
 				text.WriteString(hr)
@@ -387,6 +384,26 @@ func writeSynopsis(w io.Writer, synopsis string) {
 	}
 }
 
+func writeKnownSection(w io.Writer, i *Include, h *Help, title string, withHeader bool) {
+	si, foundi := i.Sections[title]
+	sh, foundh := h.Sections[title]
+	if !foundi && !foundh {
+		return
+	}
+	if withHeader {
+		fmt.Fprintf(w, ".SH %s\n", title)
+	}
+	if foundi {
+		fmt.Fprintln(w, si.Text)
+		if foundh {
+			fmt.Fprintln(w, ".PP")
+		}
+	}
+	if foundh {
+		efprintln(w, sh.Text)
+	}
+}
+
 func main() {
 	cli := flag.NewFlagSet(Name, flag.ExitOnError)
 	cli.Usage = func() {
@@ -499,21 +516,11 @@ func main() {
 	}
 
 	// Write DESCRIPTION section
-	if s, found := include.Sections["DESCRIPTION"]; found {
-		fmt.Fprintln(b, s.Text)
-	}
-	if help.Description != "" {
-		efprintf(b, ".SH DESCRIPTION\n%s\n", help.Description)
-	}
+	writeKnownSection(b, include, help, "DESCRIPTION", true)
 
 	// Write OPTIONS section
-	fmt.Fprint(b, ".SH OPTIONS\n")
-	if s, found := include.Sections["OPTIONS"]; found {
-		fmt.Fprintln(b, s.Text)
-	}
-	if s, found := help.Sections["OPTIONS"]; found {
-		efprintln(b, s.Text)
-	}
+	fmt.Fprintf(b, ".SH %s\n", "OPTIONS")
+	writeKnownSection(b, include, help, "OPTIONS", false)
 	for _, f := range help.Flags {
 		if f.Arg != "" {
 			efprintf(b, ".TP\n\\fB\\-%s\\fR %s\n", f.Name, f.Arg)
@@ -530,12 +537,7 @@ func main() {
 
 	// Write last known sections
 	for _, title := range KnownSections[4:] {
-		if s, found := include.Sections[title]; found {
-			fmt.Fprintf(b, ".SH %s\n%s\n", s.Title, s.Text)
-		}
-		if s, found := help.Sections[title]; found {
-			efprintf(b, ".SH %s\n%s\n", s.Title, s.Text)
-		}
+		writeKnownSection(b, include, help, title, true)
 	}
 
 	// Print man page

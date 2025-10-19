@@ -194,8 +194,10 @@ func TestParse(t *testing.T) {
 Usage: test [OPTION]... ARG
 `,
 			help: &Help{
-				Usage:       "test [OPTION]... ARG",
-				Description: "A test help message.",
+				Usage: "test [OPTION]... ARG",
+				Sections: map[string]*Section{
+					"DESCRIPTION": &Section{"DESCRIPTION", "A test help message."},
+				},
 			},
 		},
 		{
@@ -205,8 +207,10 @@ Usage: test [OPTION]... ARG
 A test help message.
 `,
 			help: &Help{
-				Usage:       "test [OPTION]... ARG",
-				Description: "A test help message.",
+				Usage: "test [OPTION]... ARG",
+				Sections: map[string]*Section{
+					"DESCRIPTION": &Section{"DESCRIPTION", "A test help message."},
+				},
 			},
 		},
 		{
@@ -217,9 +221,11 @@ A test help message.
 A test help message.
 `,
 			help: &Help{
-				Usage:       "test [OPTION]... ARG",
-				Description: "A test help message.",
-				Flags:       []*Flag{{"h", "", "Show help."}},
+				Usage: "test [OPTION]... ARG",
+				Flags: []*Flag{{"h", "", "Show help."}},
+				Sections: map[string]*Section{
+					"DESCRIPTION": &Section{"DESCRIPTION", "A test help message."},
+				},
 			},
 		},
 		{
@@ -230,10 +236,9 @@ Options:
   -h	Show help.
 `,
 			help: &Help{
-				Description: "Text of the description.",
-				Flags:       []*Flag{{"h", "", "Show help."}},
+				Flags: []*Flag{{"h", "", "Show help."}},
 				Sections: map[string]*Section{
-					"OPTIONS": &Section{Title: "OPTIONS"},
+					"DESCRIPTION": &Section{"DESCRIPTION", "Text of the description."},
 				},
 			},
 		},
@@ -242,7 +247,9 @@ Options:
 			val: `Other section:
 Text of this section.
 `,
-			help: &Help{Description: ".SS Other section:\nText of this section."},
+			help: &Help{Sections: map[string]*Section{
+				"DESCRIPTION": &Section{"DESCRIPTION", ".SS Other section:\nText of this section."},
+			}},
 		},
 	}
 	for _, c := range cases {
@@ -257,9 +264,6 @@ Text of this section.
 			}
 			if help.Usage != c.help.Usage {
 				t.Errorf("expected usage:\n%v\ngot:\n%v", c.help.Usage, help.Usage)
-			}
-			if help.Description != c.help.Description {
-				t.Errorf("expected description:\n%v\ngot:\n%v", c.help.Description, help.Description)
 			}
 			if !reflect.DeepEqual(c.help.Flags, help.Flags) {
 				t.Errorf("expected flags:\n%v\ngot:\n%v", c.help.Flags, help.Flags)
@@ -373,14 +377,18 @@ func setup(t *testing.T) string {
 func TestFull(t *testing.T) {
 	cases := []string{
 		"basic",
+		"with_headers",
 	}
 	for _, c := range cases {
 		t.Run(c, func(t *testing.T) {
+			basename := filepath.Join("testdata", "test_full_"+c)
 			out := setup(t)
-			t.Setenv("GOHELP2MAN_TESTCASE", filepath.Join("testdata", "test_full_"+c+".txt"))
+			last := len(os.Args) - 1
+			os.Args = append(os.Args[:last], "-include", basename+".h2m", os.Args[last])
+			t.Setenv("GOHELP2MAN_TESTCASE", basename+".txt")
 			t.Setenv("SOURCE_DATE_EPOCH", "0")
 			main()
-			expected, err := os.ReadFile(filepath.Join("testdata", "test_full_"+c+".1"))
+			expected, err := os.ReadFile(basename + ".1")
 			if err != nil {
 				t.Fatal(err)
 			}
