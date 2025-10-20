@@ -253,6 +253,21 @@ Text of this section.
 				"DESCRIPTION": &Section{"DESCRIPTION", ".SS Other section:\nText of this section."},
 			}},
 		},
+		{
+			name: "known header after flags",
+			val: `Text of the description.
+  -h	Show help.
+Author:
+Nicolas Peugnet
+`,
+			help: &Help{
+				Flags: []*Flag{{"h", "", "Show help."}},
+				Sections: map[string]*Section{
+					"DESCRIPTION": &Section{"DESCRIPTION", "Text of the description."},
+					"AUTHOR": &Section{"AUTHOR", "Nicolas Peugnet"},
+				},
+			},
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

@@ -167,15 +167,6 @@ func (h *Help) parseUsage() {
 	}
 }
 
-func (h *Help) parseHeader() (header string, found bool) {
-	line := h.scanner.Text()
-	m := regexHeader.FindStringSubmatch(line)
-	if m != nil {
-		return m[1], true
-	}
-	return "", false
-}
-
 // parseFlag parses a flag in the current line. If returns (nil, false) if the
 // line does not match.
 func (h *Help) parseFlag() (f *Flag, found bool) {
@@ -229,6 +220,15 @@ func (h *Help) parseFlags() {
 	}
 }
 
+func (h *Help) parseHeader() (header string, found bool) {
+	line := h.scanner.Text()
+	m := regexHeader.FindStringSubmatch(line)
+	if m != nil {
+		return m[1], true
+	}
+	return "", false
+}
+
 // parse parses the help message from the internal reader.
 func (h *Help) parse() error {
 	var s *Section = &Section{Title: "DESCRIPTION"}
@@ -243,6 +243,7 @@ func (h *Help) parse() error {
 
 	for h.scanner.Scan() {
 		h.parseUsage()
+		h.parseFlags()
 		if hr, found := h.parseHeader(); found {
 			if title, found := findKnownSection(hr); found {
 				finaliseSection()
@@ -254,7 +255,6 @@ func (h *Help) parse() error {
 			}
 			continue
 		}
-		h.parseFlags()
 		text.Write(h.scanner.Bytes())
 		text.WriteString("\n")
 	}
