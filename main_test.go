@@ -2,7 +2,9 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -397,7 +399,14 @@ func TestFull(t *testing.T) {
 				t.Fatal(err)
 			}
 			if !bytes.Equal(expected, actual) {
-				t.Errorf("expected:\n%s\ngot:\n%s", expected, actual)
+				cmd := exec.Command("diff", "-u", "--label=expected", "--label=got", basename+".1", out)
+				diff, err := cmd.Output()
+				exitErr := &exec.ExitError{}
+				if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
+					t.Errorf("\n%s", diff)
+				} else {
+					t.Errorf("expected:\n%s\ngot:\n%s", expected, actual)
+				}
 			}
 		})
 	}
