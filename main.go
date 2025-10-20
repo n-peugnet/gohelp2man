@@ -454,7 +454,7 @@ func writeKnownSection(w io.Writer, i *Include, h *Help, title string, withHeade
 	}
 }
 
-func writeManPage(w io.Writer, name, description string, include *Include, help *Help, section uint) (err error) {
+func writeManPage(w io.Writer, name, description, v string, include *Include, help *Help, section uint) (err error) {
 	defer func() {
 		if p := recover(); p != nil {
 			err = fmt.Errorf("%v", p)
@@ -466,7 +466,7 @@ func writeManPage(w io.Writer, name, description string, include *Include, help 
 
 	// Write title
 	mfprintf(w, ".TH %s %v %q %q\n",
-		e(strings.ToUpper(name)), section, now().Format("2006-01-02"), name,
+		e(strings.ToUpper(name)), section, now().Format("2006-01-02"), v,
 	)
 
 	// Write NAME section
@@ -516,14 +516,15 @@ func main() {
 		cli.PrintDefaults()
 	}
 	// TODO: add some more flags from help2man, especially:
-	//       -manual, -opt-include and -version-string
+	//       -manual and -opt-include
 	var (
-		flagHelp    bool
-		flagInclude string
-		flagName    string
-		flagOutput  string
-		flagSection uint
-		flagVersion bool
+		flagHelp          bool
+		flagInclude       string
+		flagName          string
+		flagOutput        string
+		flagSection       uint
+		flagVersion       bool
+		flagVersionString string
 	)
 	cli.BoolVar(&flagHelp, "help", false, "Show this help and exit.")
 	cli.StringVar(&flagInclude, "include", "", "Include material from `FILE`.")
@@ -531,6 +532,7 @@ func main() {
 	cli.StringVar(&flagOutput, "output", "", "Send output to `FILE` rather than stdout.")
 	cli.UintVar(&flagSection, "section", 1, "Section number for manual page (1, 6, 8).")
 	cli.BoolVar(&flagVersion, "version", false, "Show version number and exit.")
+	cli.StringVar(&flagVersionString, "version-string", "", "Set the `VERSION` to use in the footer.")
 	cli.Parse(os.Args[1:])
 
 	if flagHelp {
@@ -588,6 +590,16 @@ func main() {
 	if flagName != "" {
 		description = flagName
 	}
+	v := flagVersionString
+	fields := strings.Fields(v)
+	switch len(fields) {
+	case 0:
+		v = name
+	case 1:
+		v = name + " " + fields[0]
+	default:
+		v = strings.Join(fields, " ")
+	}
 
 	var w io.Writer
 	if flagOutput != "" {
@@ -602,7 +614,7 @@ func main() {
 	b := bufio.NewWriter(w)
 
 	// Print man page
-	err = writeManPage(b, name, description, include, help, flagSection)
+	err = writeManPage(b, name, description, v, include, help, flagSection)
 	if err != nil {
 		l.Fatalln("write man page:", err)
 	}
