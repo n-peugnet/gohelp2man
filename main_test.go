@@ -264,7 +264,7 @@ Nicolas Peugnet
 				Flags: []*Flag{{"h", "", "Show help."}},
 				Sections: map[string]*Section{
 					"DESCRIPTION": &Section{"DESCRIPTION", "Text of the description."},
-					"AUTHOR": &Section{"AUTHOR", "Nicolas Peugnet"},
+					"AUTHOR":      &Section{"AUTHOR", "Nicolas Peugnet"},
 				},
 			},
 		},
