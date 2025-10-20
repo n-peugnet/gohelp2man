@@ -198,7 +198,7 @@ Usage: test [OPTION]... ARG
 			help: &Help{
 				Usage: "test [OPTION]... ARG",
 				Sections: map[string]*Section{
-					"DESCRIPTION": &Section{"DESCRIPTION", "A test help message."},
+					"DESCRIPTION": {"DESCRIPTION", "A test help message."},
 				},
 			},
 		},
@@ -211,7 +211,7 @@ A test help message.
 			help: &Help{
 				Usage: "test [OPTION]... ARG",
 				Sections: map[string]*Section{
-					"DESCRIPTION": &Section{"DESCRIPTION", "A test help message."},
+					"DESCRIPTION": {"DESCRIPTION", "A test help message."},
 				},
 			},
 		},
@@ -226,7 +226,7 @@ A test help message.
 				Usage: "test [OPTION]... ARG",
 				Flags: []*Flag{{"h", "", "Show help."}},
 				Sections: map[string]*Section{
-					"DESCRIPTION": &Section{"DESCRIPTION", "A test help message."},
+					"DESCRIPTION": {"DESCRIPTION", "A test help message."},
 				},
 			},
 		},
@@ -240,7 +240,7 @@ Options:
 			help: &Help{
 				Flags: []*Flag{{"h", "", "Show help."}},
 				Sections: map[string]*Section{
-					"DESCRIPTION": &Section{"DESCRIPTION", "Text of the description."},
+					"DESCRIPTION": {"DESCRIPTION", "Text of the description."},
 				},
 			},
 		},
@@ -250,7 +250,7 @@ Options:
 Text of this section.
 `,
 			help: &Help{Sections: map[string]*Section{
-				"DESCRIPTION": &Section{"DESCRIPTION", ".SS Other section:\nText of this section."},
+				"DESCRIPTION": {"DESCRIPTION", ".SS Other section:\nText of this section."},
 			}},
 		},
 		{
@@ -263,8 +263,8 @@ Nicolas Peugnet
 			help: &Help{
 				Flags: []*Flag{{"h", "", "Show help."}},
 				Sections: map[string]*Section{
-					"DESCRIPTION": &Section{"DESCRIPTION", "Text of the description."},
-					"AUTHOR":      &Section{"AUTHOR", "Nicolas Peugnet"},
+					"DESCRIPTION": {"DESCRIPTION", "Text of the description."},
+					"AUTHOR":      {"AUTHOR", "Nicolas Peugnet"},
 				},
 			},
 		},
@@ -312,7 +312,7 @@ func TestParseInclude(t *testing.T) {
 gohelp2man - generate a simple manual page for Go programs
 `,
 			&Include{Sections: map[string]*Section{
-				"NAME": &Section{
+				"NAME": {
 					Title: "NAME",
 					Text:  "gohelp2man - generate a simple manual page for Go programs",
 				},
@@ -324,7 +324,7 @@ gohelp2man - generate a simple manual page for Go programs
 This is a section that is not known.
 `,
 			&Include{Sections: map[string]*Section{}, OtherSections: []*Section{
-				&Section{
+				{
 					Title: "OTHER SECTION",
 					Text:  "This is a section that is not known.",
 				},
