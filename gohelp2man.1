@@ -35,6 +35,16 @@ Section number for manual page (1, 6, 8). (default 1)
 .TP
 \fB\-version\fR
 Show version number and exit.
+.TP
+\fB\-version\-string\fR VERSION
+Set the VERSION to use in the footer.
+.SH ENVIRONMENT
+These environment variables can influence the behaviour of gohelp2man.
+.TP
+\fBGOH2M_OPTIONS\fR
+gohelp2man will parse command line arguments listed in this variable
+before any command option (as if they had been prepended to the command
+line arguments).
 .SH AUTHOR
 Written by Nicolas Peugnet.
 .SH REPORTING BUGS

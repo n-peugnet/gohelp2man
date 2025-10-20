@@ -533,7 +533,9 @@ func main() {
 	cli.UintVar(&flagSection, "section", 1, "Section number for manual page (1, 6, 8).")
 	cli.BoolVar(&flagVersion, "version", false, "Show version number and exit.")
 	cli.StringVar(&flagVersionString, "version-string", "", "Set the `VERSION` to use in the footer.")
-	cli.Parse(os.Args[1:])
+
+	envOpts := strings.Fields(os.Getenv("GOH2M_OPTIONS"))
+	cli.Parse(append(envOpts, os.Args[1:]...))
 
 	if flagHelp {
 		cli.Usage()
