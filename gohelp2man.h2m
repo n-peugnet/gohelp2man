@@ -15,3 +15,7 @@ License GPLv2+: GNU GPL version 2 or later <https://gnu.org/licenses/gpl.html>.
 This is free software: you are free to change and redistribute it.
 .br
 There is NO WARRANTY, to the extent permitted by law.
+
+[SEE ALSO]
+.BR man (1),
+.BR help2man (1)
