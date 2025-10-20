@@ -142,6 +142,9 @@ func NewHelp(help io.Reader) *Help {
 	}
 }
 
+// parseUsage parses synopsis lines from the internal reader. It will continue
+// until the current line does not look like a synopsis/usage string, leaving
+// the current line to be parsed.
 func (h *Help) parseUsage() {
 	var text strings.Builder
 	line := h.scanner.Bytes()
@@ -173,6 +176,8 @@ func (h *Help) parseHeader() (header string, found bool) {
 	return "", false
 }
 
+// parseFlag parses a flag in the current line. If returns (nil, false) if the
+// line does not match.
 func (h *Help) parseFlag() (f *Flag, found bool) {
 	line := h.scanner.Text()
 	m := regexFlag.FindStringSubmatch(line)
@@ -194,7 +199,13 @@ func (h *Help) parseFlag() (f *Flag, found bool) {
 	return
 }
 
+// parseFlags parses flags from the internal reader. It will continue until
+// the current line does not look like a flag or a flag description, leaving
+// the current line to be parsed.
 func (h *Help) parseFlags() {
+	// TODO: group together flags with the same description
+	// TODO: maybe group together short flag without description
+	//       and the only flag that start with this letter?
 	for {
 		if f, found := h.parseFlag(); found {
 			var text strings.Builder
@@ -218,6 +229,7 @@ func (h *Help) parseFlags() {
 	}
 }
 
+// parse parses the help message from the internal reader.
 func (h *Help) parse() error {
 	var s *Section = &Section{Title: "DESCRIPTION"}
 	var text strings.Builder
@@ -255,6 +267,7 @@ type Include struct {
 	OtherSections []*Section
 }
 
+// parseInclude parses an .h2m include file.
 func parseInclude(r io.Reader) (*Include, error) {
 	i := &Include{Sections: make(map[string]*Section)}
 
@@ -289,6 +302,7 @@ func parseInclude(r io.Reader) (*Include, error) {
 	return i, scanner.Err()
 }
 
+// getHelp runs the given exe with the -help flag to return its output.
 func getHelp(exe string) ([]byte, error) {
 	cmd := exec.Command(exe, "-help")
 	out, err := cmd.CombinedOutput()
@@ -301,6 +315,7 @@ func getHelp(exe string) ([]byte, error) {
 	return out, err
 }
 
+// version returns the current version of gohelp2man as found in build info.
 func version() string {
 	v := "(unknown)"
 	info, ok := debug.ReadBuildInfo()
@@ -310,6 +325,7 @@ func version() string {
 	return v
 }
 
+// now returns the current time or the value of SOURCE_DATE_EPOCH if defined.
 func now() time.Time {
 	if epoch := os.Getenv("SOURCE_DATE_EPOCH"); epoch != "" {
 		unixEpoch, err := strconv.ParseInt(epoch, 10, 64)
@@ -325,21 +341,26 @@ func now() time.Time {
 var escapeReplacer = strings.NewReplacer(
 	`-`, `\-`,
 	`\`, `\(rs`,
-	"\n\n", "\n.PP\n", // TODO: make this more robust
+	"\n\n", "\n.PP\n", // TODO: make this more robust maybe using regexp.ReplaceAll
+	// TODO: also escape lines starting with "."
 )
 
+// e escapes a value to be included as is in a man page.
 func e(v any) string {
 	return escapeReplacer.Replace(fmt.Sprint(v))
 }
 
+// efprint is like [fmt.Fprint] with all args escaped with [e].
 func efprint(w io.Writer, args ...any) (int, error) {
 	return escapeReplacer.WriteString(w, fmt.Sprint(args...))
 }
 
+// efprint is like [fmt.Fprintln] with all args escaped with [e].
 func efprintln(w io.Writer, args ...any) (int, error) {
 	return escapeReplacer.WriteString(w, fmt.Sprintln(args...))
 }
 
+// efprint is like [fmt.Fprintf] with all args escaped with [e].
 func efprintf(w io.Writer, format string, args ...any) (int, error) {
 	eargs := make([]any, len(args))
 	for i, arg := range args {
@@ -384,6 +405,12 @@ func writeSynopsis(w io.Writer, synopsis string) {
 	}
 }
 
+// writeKnownSection writes the section with given title in w if it is present
+// at least in i or h. It withHeader is true and the section is found, then
+// the title of this section it prependend to the section's text.
+//
+// The text from i is written first, and if the section is present in both i
+// and h, then they will be in different paragraphs.
 func writeKnownSection(w io.Writer, i *Include, h *Help, title string, withHeader bool) {
 	si, foundi := i.Sections[title]
 	sh, foundh := h.Sections[title]
@@ -410,6 +437,8 @@ func main() {
 		fmt.Fprintf(cli.Output(), Usage, Name, Name)
 		cli.PrintDefaults()
 	}
+	// TODO: add some more flags from help2man, especially:
+	//       -manual, -opt-include and -version-string
 	var (
 		flagHelp    bool
 		flagInclude string
