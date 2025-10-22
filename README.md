@@ -1,7 +1,7 @@
 gohelp2man
 ==========
 
-[![build][build-svg]][build-url] [![coverage][cover-svg]][cover-url]
+[![build][build-svg]][build-url] [![coverage][cover-svg]][cover-url] [![report][report-svg]][report-url]
 
 Go has a simple but very effective "flag" package that can be used to quickly
 create CLI applications without any additional dependencies. But this package
@@ -19,4 +19,5 @@ It is a great match with "go get -tool" and "go generate"!
 [build-url]: https://github.com/n-peugnet/gohelp2man/actions/workflows/build.yml
 [cover-svg]: https://github.com/n-peugnet/gohelp2man/wiki/coverage.svg
 [cover-url]: https://raw.githack.com/wiki/n-peugnet/gohelp2man/coverage.html
-
+[report-svg]: https://goreportcard.com/badge/github.com/n-peugnet/gohelp2man
+[report-url]: https://goreportcard.com/report/github.com/n-peugnet/gohelp2man
