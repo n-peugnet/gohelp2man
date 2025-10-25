@@ -198,7 +198,7 @@ Usage: test [OPTION]... ARG
 			help: &Help{
 				Usage: "test [OPTION]... ARG",
 				Sections: map[string]*Section{
-					"DESCRIPTION": {"DESCRIPTION", "A test help message."},
+					"DESCRIPTION": {"DESCRIPTION", "A test help message.", 0},
 				},
 			},
 		},
@@ -211,7 +211,7 @@ A test help message.
 			help: &Help{
 				Usage: "test [OPTION]... ARG",
 				Sections: map[string]*Section{
-					"DESCRIPTION": {"DESCRIPTION", "A test help message."},
+					"DESCRIPTION": {"DESCRIPTION", "A test help message.", 0},
 				},
 			},
 		},
@@ -226,7 +226,7 @@ A test help message.
 				Usage: "test [OPTION]... ARG",
 				Flags: []*Flag{{"h", "", "Show help."}},
 				Sections: map[string]*Section{
-					"DESCRIPTION": {"DESCRIPTION", "A test help message."},
+					"DESCRIPTION": {"DESCRIPTION", "A test help message.", 0},
 				},
 			},
 		},
@@ -240,7 +240,7 @@ Options:
 			help: &Help{
 				Flags: []*Flag{{"h", "", "Show help."}},
 				Sections: map[string]*Section{
-					"DESCRIPTION": {"DESCRIPTION", "Text of the description."},
+					"DESCRIPTION": {"DESCRIPTION", "Text of the description.", 0},
 				},
 			},
 		},
@@ -250,7 +250,7 @@ Options:
 Text of this section.
 `,
 			help: &Help{Sections: map[string]*Section{
-				"DESCRIPTION": {"DESCRIPTION", ".SS Other section:\nText of this section."},
+				"DESCRIPTION": {"DESCRIPTION", ".SS Other section:\nText of this section.", 0},
 			}},
 		},
 		{
@@ -263,8 +263,8 @@ Nicolas Peugnet
 			help: &Help{
 				Flags: []*Flag{{"h", "", "Show help."}},
 				Sections: map[string]*Section{
-					"DESCRIPTION": {"DESCRIPTION", "Text of the description."},
-					"AUTHOR":      {"AUTHOR", "Nicolas Peugnet"},
+					"DESCRIPTION": {"DESCRIPTION", "Text of the description.", 0},
+					"AUTHOR":      {"AUTHOR", "Nicolas Peugnet", 0},
 				},
 			},
 		},
@@ -340,6 +340,13 @@ This is a section that is not known.
 					Title: "OTHER SECTION",
 					Text:  "This is a section that is not known.",
 				},
+			}},
+		},
+		{
+			"positionned known section",
+			"[>DESCRIPTION]\nAppend\n",
+			&Include{Sections: map[string]*Section{
+				"DESCRIPTION": {"DESCRIPTION", "Append", '>'},
 			}},
 		},
 	}

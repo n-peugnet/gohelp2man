@@ -5,3 +5,6 @@ This becomes a top level section.
 
 Usage of test-command:
   -h	Show help
+
+Author:
+Will be replaced

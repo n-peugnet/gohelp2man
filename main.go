@@ -112,10 +112,11 @@ func findKnownSection(s string) (title string, found bool) {
 type Section struct {
 	Title string
 	Text  string
+	Pos   byte
 }
 
 func (s *Section) String() string {
-	return fmt.Sprintf("{%q %q}", s.Title, s.Text)
+	return fmt.Sprintf("{%q %q %q}", s.Title, s.Text, s.Pos)
 }
 
 type Flag struct {
@@ -263,6 +264,30 @@ func (h *Help) parse() error {
 	return h.scanner.Err()
 }
 
+// sectionMarkup returns the text of a known section if found, ready to be
+// written on the output man page as is.
+func (h *Help) sectionMarkup(title string) (markup string, found bool) {
+	s, found := h.Sections[title]
+	b := &strings.Builder{}
+	if found {
+		efprintln(b, s.Text)
+	}
+	switch title {
+	case "OPTIONS":
+		found = true
+		for _, f := range h.Flags {
+			if f.Arg != "" {
+				efprintf(b, ".TP\n\\fB\\-%s\\fR %s\n", f.Name, f.Arg)
+			} else {
+				efprintf(b, ".TP\n\\fB\\-%s\\fR\n", f.Name)
+			}
+			efprintln(b, f.Usage)
+		}
+	}
+	markup = b.String()
+	return
+}
+
 type Include struct {
 	Sections      map[string]*Section
 	OtherSections []*Section
@@ -287,8 +312,15 @@ func parseInclude(r io.Reader) (*Include, error) {
 		m := regexSection.FindStringSubmatch(line)
 		if m != nil {
 			finaliseSection()
-			title, found := findKnownSection(m[1])
-			s = &Section{Title: title}
+			s = &Section{}
+			title := m[1]
+			switch r := m[1][0]; r {
+			case '<', '=', '>':
+				s.Pos = r
+				title = m[1][1:]
+			}
+			title, found := findKnownSection(title)
+			s.Title = title
 			if found {
 				i.Sections[title] = s
 			} else {
@@ -435,23 +467,33 @@ func writeSynopsis(w io.Writer, synopsis string) {
 //
 // The text from i is written first, and if the section is present in both i
 // and h, then they will be in different paragraphs.
-func writeKnownSection(w io.Writer, i *Include, h *Help, title string, withHeader bool) {
+func writeKnownSection(w io.Writer, i *Include, h *Help, title string) {
 	si, foundi := i.Sections[title]
-	sh, foundh := h.Sections[title]
+	sh, foundh := h.sectionMarkup(title)
 	if !foundi && !foundh {
 		return
 	}
-	if withHeader {
-		mfprintf(w, ".SH %s\n", title)
-	}
-	if foundi {
-		mfprintln(w, si.Text)
-		if foundh {
+	mfprintf(w, ".SH %s\n", title)
+	switch {
+	case foundi && foundh:
+		switch si.Pos {
+		case '>':
+			mfprint(w, sh)
 			mfprintln(w, ".PP")
+			mfprintln(w, si.Text)
+		case '=':
+			mfprintln(w, si.Text)
+		case '<':
+			fallthrough
+		default:
+			mfprintln(w, si.Text)
+			mfprintln(w, ".PP")
+			mfprint(w, sh)
 		}
-	}
-	if foundh {
-		efprintln(w, sh.Text)
+	case foundi:
+		mfprintln(w, si.Text)
+	case foundh:
+		mfprint(w, sh)
 	}
 }
 
@@ -486,19 +528,10 @@ func writeManPage(w io.Writer, name, description, v string, include *Include, he
 	}
 
 	// Write DESCRIPTION section
-	writeKnownSection(w, include, help, "DESCRIPTION", true)
+	writeKnownSection(w, include, help, "DESCRIPTION")
 
 	// Write OPTIONS section
-	mfprintf(w, ".SH %s\n", "OPTIONS")
-	writeKnownSection(w, include, help, "OPTIONS", false)
-	for _, f := range help.Flags {
-		if f.Arg != "" {
-			efprintf(w, ".TP\n\\fB\\-%s\\fR %s\n", f.Name, f.Arg)
-		} else {
-			efprintf(w, ".TP\n\\fB\\-%s\\fR\n", f.Name)
-		}
-		efprintln(w, f.Usage)
-	}
+	writeKnownSection(w, include, help, "OPTIONS")
 
 	// Write other included sections
 	for _, s := range include.OtherSections {
@@ -507,7 +540,7 @@ func writeManPage(w io.Writer, name, description, v string, include *Include, he
 
 	// Write last known sections
 	for _, title := range KnownSections[4:] {
-		writeKnownSection(w, include, help, title, true)
+		writeKnownSection(w, include, help, title)
 	}
 	return
 }
