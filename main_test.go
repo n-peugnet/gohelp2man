@@ -319,6 +319,18 @@ gohelp2man - generate a simple manual page for Go programs
 			}},
 		},
 		{
+			"lowercase known section",
+			`[name]
+gohelp2man - generate a simple manual page for Go programs
+`,
+			&Include{Sections: map[string]*Section{
+				"NAME": {
+					Title: "NAME",
+					Text:  "gohelp2man - generate a simple manual page for Go programs",
+				},
+			}},
+		},
+		{
 			"single other section",
 			`[Other section]
 This is a section that is not known.
