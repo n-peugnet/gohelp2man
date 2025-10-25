@@ -63,6 +63,7 @@ Usage: %s [OPTION]... EXECUTABLE
 )
 
 var (
+	debugMode    = os.Getenv("GOH2M_DEBUG") != ""
 	l            = log.New(os.Stderr, Name+": ", 0)
 	regexSection = regexp.MustCompile(RegexSection)
 	regexUsage   = regexp.MustCompile(RegexUsage)
@@ -456,8 +457,10 @@ func writeKnownSection(w io.Writer, i *Include, h *Help, title string, withHeade
 
 func writeManPage(w io.Writer, name, description, v string, include *Include, help *Help, section uint) (err error) {
 	defer func() {
-		if p := recover(); p != nil {
-			err = fmt.Errorf("%v", p)
+		if !debugMode {
+			if p := recover(); p != nil {
+				err = fmt.Errorf("%v", p)
+			}
 		}
 	}()
 
