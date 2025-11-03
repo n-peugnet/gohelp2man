@@ -438,30 +438,13 @@ func writeSynopsis(w io.Writer, synopsis string) {
 		return
 	}
 	splits := strings.Split(rest, "\n"+name+" ")
+	re := regexp.MustCompile(`\[([^[]+)\]`)
 	for i, args := range splits {
 		if i != 0 {
 			mfprint(w, ".br\n")
 		}
 		efprintf(w, "\\fB%s\\fR ", name)
-		for {
-			lBracket := strings.Index(args, "[")
-			if lBracket == -1 {
-				efprint(w, args)
-				break
-			}
-			efprint(w, args[:lBracket])
-			args = args[lBracket:]
-			rBracket := strings.Index(args, "]")
-			if rBracket == -1 {
-				efprint(w, args)
-				break
-			}
-			mfprint(w, "[")
-			efprintf(w, "\\fI%s\\fR", args[1:rBracket])
-			mfprint(w, "]")
-			args = args[rBracket+1:]
-		}
-		mfprintln(w)
+		mfprintln(w, re.ReplaceAllString(e(args), `[\fI${1}\fR]`))
 	}
 }
 
