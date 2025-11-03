@@ -406,23 +406,27 @@ func e(v any) string {
 	return escapeReplacer.Replace(fmt.Sprint(v))
 }
 
-// efprint is [mfprint] with all args escaped with [e].
-func efprint(w io.Writer, args ...any) int {
-	return must(escapeReplacer.WriteString(w, fmt.Sprint(args...)))
-}
-
-// efprintln is [mfprintln] with all args escaped with [e].
-func efprintln(w io.Writer, args ...any) int {
-	return must(escapeReplacer.WriteString(w, fmt.Sprintln(args...)))
-}
-
-// efprintf is [mfprintf] with all args escaped with [e].
-func efprintf(w io.Writer, format string, args ...any) int {
+func eArgs(args []any) []any {
 	eargs := make([]any, len(args))
 	for i, arg := range args {
 		eargs[i] = e(arg)
 	}
-	return mfprintf(w, format, eargs...)
+	return eargs
+}
+
+// efprint is [mfprint] with all args escaped with [e].
+func efprint(w io.Writer, args ...any) int {
+	return mfprint(w, eArgs(args)...)
+}
+
+// efprintln is [mfprintln] with all args escaped with [e].
+func efprintln(w io.Writer, args ...any) int {
+	return mfprintln(w, eArgs(args)...)
+}
+
+// efprintf is [mfprintf] with all args escaped with [e].
+func efprintf(w io.Writer, format string, args ...any) int {
+	return mfprintf(w, format, eArgs(args)...)
 }
 
 // writeSynopsis formats a synopsis line by writing the command name in bold
