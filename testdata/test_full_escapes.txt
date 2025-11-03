@@ -1,0 +1,8 @@
+Help message to test the escapes...
+
+...like the leading dot.
+
+
+
+Multiple line breaks, words-with-hyphens and \backslashes\.
+Maybe even more to come...

@@ -1,5 +1,5 @@
 #!/bin/sh
 while IFS= read -r line
 do
-	echo "$line"
+	printf "%s\n" "$line"
 done < $GOHELP2MAN_TESTCASE

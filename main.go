@@ -371,11 +371,11 @@ func now() time.Time {
 	}
 }
 
-var escapeReplacer = strings.NewReplacer(
+var escapeReplacer = NewRegexpReplacer(
 	`-`, `\-`,
-	`\`, `\(rs`,
-	"\n\n", "\n.PP\n", // TODO: make this more robust maybe using regexp.ReplaceAll
-	// TODO: also escape lines starting with "."
+	`\\`, `\(rs`,
+	"\n\n+", "\n.PP\n",
+	`(?m)^\.`, `\&.`,
 )
 
 // must panics if err is not nil.

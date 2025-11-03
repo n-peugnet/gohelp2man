@@ -413,6 +413,7 @@ func setup(t *testing.T) string {
 func TestFull(t *testing.T) {
 	cases := []string{
 		"basic",
+		"escapes",
 		"with_headers",
 	}
 	for _, c := range cases {
