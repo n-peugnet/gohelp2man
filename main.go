@@ -293,6 +293,21 @@ type Include struct {
 	OtherSections []*Section
 }
 
+func readInclude(path string, optional bool) (include *Include, err error) {
+	f, err := os.Open(path)
+	if err != nil {
+		if optional {
+			return &Include{}, nil
+		}
+		return nil, err
+	}
+	include, err = parseInclude(bufio.NewReader(f))
+	if err != nil {
+		return nil, fmt.Errorf("parse: %w", err)
+	}
+	return
+}
+
 // parseInclude parses an .h2m include file.
 func parseInclude(r io.Reader) (*Include, error) {
 	i := &Include{Sections: make(map[string]*Section)}
@@ -539,11 +554,12 @@ func main() {
 		cli.PrintDefaults()
 	}
 	// TODO: add some more flags from help2man, especially:
-	//       -manual and -opt-include
+	//       -manual
 	var (
 		flagHelp          bool
 		flagInclude       string
 		flagName          string
+		flagOptInclude    string
 		flagOutput        string
 		flagSection       uint
 		flagVersion       bool
@@ -552,6 +568,7 @@ func main() {
 	cli.BoolVar(&flagHelp, "help", false, "Show this help and exit.")
 	cli.StringVar(&flagInclude, "include", "", "Include material from `FILE`.")
 	cli.StringVar(&flagName, "name", "", "Description for the NAME paragraph.")
+	cli.StringVar(&flagOptInclude, "opt-include", "", "A variant of -include which does not require `FILE` to exist.")
 	cli.StringVar(&flagOutput, "output", "", "Send output to `FILE` rather than stdout.")
 	cli.UintVar(&flagSection, "section", 1, "Section number for manual page (1, 6, 8).")
 	cli.BoolVar(&flagVersion, "version", false, "Show version number and exit.")
@@ -578,16 +595,19 @@ func main() {
 	}
 
 	include := &Include{}
-	if flagInclude != "" {
-		var err error
-		f, err := os.Open(flagInclude)
-		if err != nil {
-			l.Fatalln("include file:", err)
-		}
-		include, err = parseInclude(bufio.NewReader(f))
-		if err != nil {
-			l.Fatalln("parse include:", err)
-		}
+	hasOptInclude, hasInclude := flagOptInclude != "", flagInclude != ""
+	if hasOptInclude && hasInclude {
+		l.Fatalln("-opt-include and -include cannot be specified at the same time")
+	}
+	var err error
+	if hasOptInclude {
+		include, err = readInclude(flagOptInclude, true)
+	}
+	if hasInclude {
+		include, err = readInclude(flagInclude, false)
+	}
+	if err != nil {
+		l.Fatalln("include file:", err)
 	}
 
 	out, err := getHelp(exe)
