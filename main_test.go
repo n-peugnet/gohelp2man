@@ -421,7 +421,7 @@ func TestFull(t *testing.T) {
 			basename := filepath.Join("testdata", "test_full_"+c)
 			out := setup(t)
 			last := len(os.Args) - 1
-			os.Args = append(os.Args[:last], "-include", basename+".h2m", os.Args[last])
+			os.Args = append(os.Args[:last], "-opt-include", basename+".h2m", os.Args[last])
 			t.Setenv("GOHELP2MAN_TESTCASE", basename+".txt")
 			t.Setenv("SOURCE_DATE_EPOCH", "0")
 			main()
