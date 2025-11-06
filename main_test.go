@@ -101,7 +101,7 @@ func TestParseFlags(t *testing.T) {
 			"multi short",
 			`  -h	Show help
     	and exit.`,
-			&Flag{"h", "", "Show help and exit."},
+			&Flag{"h", "", "Show help\nand exit."},
 			true,
 		},
 		{
@@ -116,7 +116,7 @@ func TestParseFlags(t *testing.T) {
 			`  -help
     	Show help
     	and exit.`,
-			&Flag{"help", "", "Show help and exit."},
+			&Flag{"help", "", "Show help\nand exit."},
 			true,
 		},
 		{

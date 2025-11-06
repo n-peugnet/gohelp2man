@@ -209,7 +209,7 @@ func (h *Help) parseFlags() {
 			for h.scanner.Scan() {
 				line := h.scanner.Text()
 				if regexFUsage.MatchString(line) {
-					text.WriteString(" ")
+					text.WriteString("\n")
 					text.WriteString(strings.TrimSpace(line))
 				} else {
 					break
