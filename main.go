@@ -499,7 +499,7 @@ func writeKnownSection(w io.Writer, i *Include, h *Help, title string) {
 	}
 }
 
-func writeManPage(w io.Writer, name, description, v string, include *Include, help *Help, section uint, manual string) (err error) {
+func writeManPage(w io.Writer, name, description, v string, include *Include, help *Help, section, manual string) (err error) {
 	defer func() {
 		if !debugMode {
 			if p := recover(); p != nil {
@@ -564,7 +564,7 @@ func main() {
 		flagName          string
 		flagOptInclude    string
 		flagOutput        string
-		flagSection       uint
+		flagSection       string
 		flagVersion       bool
 		flagVersionString string
 	)
@@ -578,7 +578,8 @@ func main() {
 	cli.StringVar(&flagName, "name", "", "Description for the NAME paragraph.")
 	cli.StringVar(&flagOptInclude, "opt-include", "", "A variant of -include which does not require `FILE` to exist.")
 	cli.StringVar(&flagOutput, "output", "", "Send output to `FILE` rather than stdout.")
-	cli.UintVar(&flagSection, "section", 1, "Section number for manual page (1, 6, 8).")
+	cli.StringVar(&flagSection, "section", "1", "Set the section of the manual page to `NUMBER` (e.g. 1, 6 or 8). See\n"+
+		"man(1) for common section numbers.")
 	cli.BoolVar(&flagVersion, "version", false, "Show version number and exit.")
 	cli.StringVar(&flagVersionString, "version-string", "", "Set the `VERSION` to use in the footer.")
 
