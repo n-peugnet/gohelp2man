@@ -19,7 +19,6 @@ package main
 
 import (
 	"regexp"
-	"strings"
 )
 
 type RegexpReplacer struct {
@@ -64,33 +63,34 @@ func NewRegexpReplacer(oldnew ...string) *RegexpReplacer {
 }
 
 func (rr *RegexpReplacer) Replace(s string) string {
-	builder := strings.Builder{}
+	buf := make([]byte, 0, len(s))
 	pos := 0
 	matches := rr.compound.FindAllStringSubmatchIndex(s, -1)
 	for pos < len(s) {
 		if len(matches) == 0 {
-			builder.WriteString(s[pos:])
+			buf = append(buf, s[pos:]...)
 			break
 		}
 		submatches := matches[0]
 		// Ignore both full match and the first submatch used to create
 		// the coumpound regex
-		submatch := 4
+		subFrom := 4
 		for i, subexp := range rr.subexps {
-			start := submatches[submatch]
-			end := submatches[submatch+1]
+			subTo := subFrom + subexp*2
+			submatch := submatches[subFrom:subTo]
+			start := submatches[subFrom]
+			end := submatches[subFrom+1]
 			if start != -1 {
-				builder.WriteString(s[pos:start])
+				buf = append(buf, s[pos:start]...)
 				re := rr.regexps[i]
 				repl := rr.repls[i]
-				new := re.ReplaceAllString(s[start:end], repl)
-				builder.WriteString(new)
+				buf = re.ExpandString(buf, repl, s, submatch)
 				pos = end
 				break
 			}
-			submatch += subexp * 2
+			subFrom = subTo
 		}
 		matches = matches[1:]
 	}
-	return builder.String()
+	return string(buf)
 }
