@@ -1,6 +1,66 @@
 [NAME]
 gohelp2man - generate a simple manual page for Go programs
 
+[INCLUDE FILES]
+Additional material may be included in the generated output with the
+.B \-include
+and
+.B \-opt\-include
+options.  The format is simple:
+
+    [section]
+    text
+
+    /pattern/
+    text
+
+Blocks of verbatim *roff text are inserted into the output either at
+the start of the given
+.BI [ section ]
+(case insensitive).
+.PP
+Lines before the first section are silently ignored and may be
+used for comments, RCS keywords and the like.
+.PP
+The section output order (for those included) is:
+
+    NAME
+    SYNOPSIS
+    DESCRIPTION
+    OPTIONS
+    \fIother\fR
+    ENVIRONMENT
+    FILES
+    EXAMPLES
+    AUTHOR
+    REPORTING BUGS
+    COPYRIGHT
+    SEE ALSO
+
+Any
+.B [NAME]
+or
+.B [SYNOPSIS]
+sections appearing in the include file will replace what would have
+automatically been produced (although you can still override the
+former with
+.B \-name
+if required).
+.PP
+Other sections are prepended to the automatically produced output for
+the standard sections given above, or included at
+.I other
+(above) in the order they were encountered in the include file.
+.PP
+Placement of the text within the section may be explicitly requested by using
+the syntax
+.RI [< section ],
+.RI [= section ]
+or
+.RI [> section ]
+to place the additional text before, in place of, or after the default
+output respectively.
+
 [ENVIRONMENT]
 These environment variables can influence the behaviour of gohelp2man.
 .TP
@@ -16,7 +76,9 @@ line arguments).
 Will override the current timestamp if set.
 
 [AUTHOR]
-Written by Nicolas Peugnet.
+Written by Nicolas Peugnet with parts adapted from
+.BR help2man (1)
+manual page by Brendan O'Dea <bod@debian.org>.
 
 [REPORTING BUGS]
 Use the issue tracker at <https://github.com/n-peugnet/gohelp2man>.
