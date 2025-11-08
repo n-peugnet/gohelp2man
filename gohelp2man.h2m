@@ -61,6 +61,20 @@ or
 to place the additional text before, in place of, or after the default
 output respectively.
 
+[DIFFERENCES WITH HELP2MAN]
+gohelp2man is mostly a copy of
+.BR help2man (1),
+but there are a few differences. Here is the full list (might change in the future):
+.IP (1) 5
+gohelp2man is dedicated to parse the output of the "flag" package of Go's stdlib,
+whereas help2man is focused on parsing GNU style options.
+.IP (2)
+gohelp2man does not support the
+.BI / pattern /\fR
+feature of help2man's include files.
+.IP (3)
+gohelp2man does not support the additional options feature of help2man's include files.
+
 [ENVIRONMENT]
 These environment variables can influence the behaviour of gohelp2man.
 .TP
