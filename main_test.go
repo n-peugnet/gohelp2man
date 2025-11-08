@@ -267,7 +267,7 @@ Options:
 Text of this section.
 `,
 			help: &Help{Sections: map[string]*Section{
-				"DESCRIPTION": {"DESCRIPTION", ".SS Other section:\nText of this section.", 0},
+				"DESCRIPTION": {"DESCRIPTION", "Other section:\nText of this section.", 0},
 			}},
 		},
 		{
@@ -431,6 +431,7 @@ func TestFull(t *testing.T) {
 	cases := []string{
 		"basic",
 		"escapes",
+		"formatting",
 		"with_headers",
 	}
 	for _, c := range cases {

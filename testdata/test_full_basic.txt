@@ -20,6 +20,6 @@ Usage: gohelp2man [OPTION]... EXECUTABLE
   -output FILE
     	Send output to FILE rather than stdout.
   -section uint
-    	Section number for manual page (1, 6, 8). See also man(1) and man-pages(7). (default 1)
+    	Section number for manual page (1, 6, 8). (default 1)
   -version
     	Show version number and exit.

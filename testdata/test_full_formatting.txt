@@ -1,0 +1,3 @@
+Man pages notation:
+basic: man(1),
+hyphen: man-pages(7).

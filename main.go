@@ -250,12 +250,8 @@ func (h *Help) parse() error {
 			if title, found := findKnownSection(hr); found {
 				finaliseSection()
 				s = &Section{Title: title}
-			} else {
-				text.WriteString(".SS ")
-				text.WriteString(hr)
-				text.WriteString(":\n")
+				continue
 			}
-			continue
 		}
 		text.Write(h.scanner.Bytes())
 		text.WriteString("\n")
@@ -395,6 +391,8 @@ var blockEscaper = NewRegexpReplacer(
 )
 
 var blockFormatter = NewRegexpReplacer(
+	// Format second level headers
+	`(?m)^(\w.*):\s*$`, `.SS $1:`,
 	// Format man(1) style notation
 	`\b(\w(?:\\-|\w)+\w)\((\w+)\)\B`, `\fB$1\fP($2)`,
 	// Format -flag in bold
