@@ -392,7 +392,7 @@ var blockEscaper = NewRegexpReplacer(
 
 var blockFormatter = NewRegexpReplacer(
 	// Format second level headers
-	`(?m)^(\w.*):\s*$`, `.SS $1:`,
+	`(?m)^(?:.PP\n)?(\w.*):\s*$`, `.SS $1:`,
 	// Format man(1) style notation
 	`\b(\w|\w(?:\\-|\w|\.|:)*\w)\((\w+)\)\B`, `\fB$1\fP($2)`,
 	// Format -flag in bold
