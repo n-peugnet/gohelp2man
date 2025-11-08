@@ -391,6 +391,7 @@ var blockEscaper = NewRegexpReplacer(
 	`\\`, `\(rs`,
 	"\n\n+", "\n.PP\n",
 	`(?m)^\.`, `\&.`,
+	`(?m)^\'`, `\&'`,
 )
 
 var fieldEscaper = NewRegexpReplacer(
