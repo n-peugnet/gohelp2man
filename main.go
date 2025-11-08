@@ -397,6 +397,8 @@ var blockEscaper = NewRegexpReplacer(
 var blockFormatter = NewRegexpReplacer(
 	// Format man(1) style notation
 	`\b(\w(?:\\-|\w)+\w)\((\w+)\)\B`, `\fB$1\fP($2)`,
+	// Format -flag in bold
+	`\B(\\-(?:\\-|\w)+\w)\b`, `\fB$1\fP`,
 )
 
 var fieldEscaper = NewRegexpReplacer(

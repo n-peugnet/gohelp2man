@@ -400,9 +400,9 @@ func TestWriteSynopsis(t *testing.T) {
 			"basic multiline",
 			`stringer [flags] -type T [directory]
 stringer [flags] -type T files...`,
-			`\fBstringer\fR [\fIflags\fR] \-type T [\fIdirectory\fR]
+			`\fBstringer\fR [\fIflags\fR] \fB\-type\fP T [\fIdirectory\fR]
 .br
-\fBstringer\fR [\fIflags\fR] \-type T files...`,
+\fBstringer\fR [\fIflags\fR] \fB\-type\fP T files...`,
 		},
 	}
 	for _, c := range cases {
