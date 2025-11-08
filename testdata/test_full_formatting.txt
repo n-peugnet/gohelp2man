@@ -1,3 +1,11 @@
 Man pages notation:
 basic: man(1),
-hyphen: man-pages(7).
+hyphen: man-pages(7),
+small: 7z(1),
+dot: binfmt.d(5),
+perl: Date::Parse(3pm).
+
+Flags notation:
+basic: -flag,
+short: -a,
+hyphen: -opt-include.
