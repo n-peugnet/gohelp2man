@@ -394,6 +394,11 @@ var blockEscaper = NewRegexpReplacer(
 	`(?m)^\'`, `\&'`,
 )
 
+var blockFormatter = NewRegexpReplacer(
+	// Format man(1) style notation
+	`\b(\w(?:\\-|\w)+\w)\((\w+)\)\B`, `\fB$1\fP($2)`,
+)
+
 var fieldEscaper = NewRegexpReplacer(
 	`-`, `\-`,
 	`"`, `\(dq`,
@@ -422,9 +427,10 @@ func mfprintf(w io.Writer, format string, args ...any) int {
 	return must(fmt.Fprintf(w, format, args...))
 }
 
-// e escapes a value to be included as is in a man page.
+// e escapes and formats a value to be included as is in a man page as a block of text.
 func e(v any) string {
-	return blockEscaper.Replace(fmt.Sprint(v))
+	escaped := blockEscaper.Replace(fmt.Sprint(v))
+	return blockFormatter.Replace(escaped)
 }
 
 func eArgs(args []any) []any {
