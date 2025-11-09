@@ -74,6 +74,31 @@ gohelp2man does not support the
 feature of help2man's include files.
 .IP (3)
 gohelp2man does not support the additional options feature of help2man's include files.
+.IP (4)
+gohelp2man flags do not have shorthands and some flags from help2man are missing:
+.RS
+.TP
+.B \-\-source
+.TP
+.B \-\-locale
+.TP
+.B \-\-info\-page
+N/A (info pages are never mentionned)
+.TP
+.B \-\-no\-info
+N/A (info pages are never mentionned)
+.TP
+.B \-\-libtool
+N/A (meaningless in the context of Go programs)
+.TP
+.B \-\-help\-option
+.TP
+.B \-\-version\-option
+N/A (Go programs are not expected to have a version flag)
+.TP
+.B \-\-no\-discard\-stderr
+N/A (stderr is always taken into account)
+.RE
 
 [ENVIRONMENT]
 These environment variables can influence the behaviour of gohelp2man.
