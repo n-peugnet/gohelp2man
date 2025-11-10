@@ -417,13 +417,14 @@ stringer [flags] -type T files...`,
 	}
 }
 
-func setup(t *testing.T) string {
+func setup(t *testing.T, args ...string) string {
 	t.Helper()
 	prevArgs := os.Args
 	t.Cleanup(func() { os.Args = prevArgs })
 	tmp := t.TempDir()
 	out := filepath.Join(tmp, "out")
-	os.Args = []string{"gohelp2man", "-output", out, "testdata/test.sh"}
+	os.Args = append([]string{"gohelp2man"}, args...)
+	os.Args = append(os.Args, "-output", out, "testdata/test.sh")
 	return out
 }
 
@@ -437,9 +438,12 @@ func TestFull(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c, func(t *testing.T) {
 			basename := filepath.Join("testdata", "test_full_"+c)
-			out := setup(t)
-			last := len(os.Args) - 1
-			os.Args = append(os.Args[:last], "-opt-include", basename+".h2m", os.Args[last])
+			args := []string{"-opt-include", basename + ".h2m"}
+			if strargs, err := os.ReadFile(basename + ".args"); err == nil {
+				f := func(r rune) bool { return r == '\n' || r == '\r' }
+				args = append(args, strings.FieldsFunc(string(strargs), f)...)
+			}
+			out := setup(t, args...)
 			t.Setenv("GOHELP2MAN_TESTCASE", basename+".txt")
 			t.Setenv("SOURCE_DATE_EPOCH", "0")
 			main()

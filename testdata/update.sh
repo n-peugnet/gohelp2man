@@ -1,7 +1,7 @@
 #!/bin/sh
 export SOURCE_DATE_EPOCH=0
-set -x
 for f in testdata/test_full_*.txt
 do
-	GOHELP2MAN_TESTCASE=$f go run . -opt-include "${f%.txt}.h2m" "testdata/test.sh" > "${f%.txt}.1"
+	cat "${f%.txt}.args" 2> /dev/null \
+	| xargs -d'\n' sh -x -c "GOHELP2MAN_TESTCASE=$f go run . -opt-include ${f%.txt}.h2m \"\$@\" testdata/test.sh" "go" > "${f%.txt}.1"
 done
