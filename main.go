@@ -531,7 +531,7 @@ func writeManPage(w io.Writer, name, description, v string, include *Include, he
 		fieldEscaper.Replace(v),
 	)
 	if manual != "" {
-		mfprintf(w, " %q", manual)
+		mfprintf(w, ` "%s"`, fieldEscaper.Replace(manual))
 	}
 	mfprintln(w)
 
