@@ -69,12 +69,15 @@ but there are a few differences. Here is the full list (might change in the futu
 gohelp2man is dedicated to parse the output of the "flag" package of Go's stdlib,
 whereas help2man is focused on parsing GNU style options.
 .IP (2)
+gohelp2man does not try to get the version from the \fB\-version\fR flag,
+it must be set with the \fB\-version-string\fR flag.
+.IP (3)
 gohelp2man does not support the
 .BI / pattern /\fR
 feature of help2man's include files.
-.IP (3)
-gohelp2man does not support the additional options feature of help2man's include files.
 .IP (4)
+gohelp2man does not support the additional options feature of help2man's include files.
+.IP (5)
 gohelp2man flags do not have shorthands and some flags from help2man are missing:
 .RS
 .TP
