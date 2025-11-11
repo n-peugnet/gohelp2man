@@ -25,7 +25,9 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"syscall"
 	"testing"
+	"unsafe"
 )
 
 func TestParseUsage(t *testing.T) {
@@ -428,6 +430,12 @@ func setup(t *testing.T, args ...string) string {
 	return out
 }
 
+func isatty() bool {
+	var size uint64
+	_, _, err := syscall.Syscall(syscall.SYS_IOCTL, os.Stderr.Fd(), syscall.TIOCGWINSZ, uintptr(unsafe.Pointer(&size)))
+	return err == 0
+}
+
 func TestFull(t *testing.T) {
 	cases := []string{
 		"basic",
@@ -456,7 +464,12 @@ func TestFull(t *testing.T) {
 				t.Fatal(err)
 			}
 			if !bytes.Equal(expected, actual) {
-				cmd := exec.Command("diff", "-u", "--label=expected", "--label=got", basename+".1", out)
+				var args []string
+				if isatty() {
+					args = []string{"--color=always"}
+				}
+				args = append(args, "-u", "--label=expected", "--label=got", basename+".1", out)
+				cmd := exec.Command("diff", args...)
 				diff, err := cmd.Output()
 				exitErr := &exec.ExitError{}
 				if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
