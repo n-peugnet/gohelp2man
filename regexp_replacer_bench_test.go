@@ -45,6 +45,8 @@ func benchmarkLargeExpected() string {
 	return string(buf)
 }
 
+// The [strings.Replacer] is expected to be a lot more efficient, but it
+// can only match litteral strings.
 func BenchmarkStringReplacerBaseline(b *testing.B) {
 	input := benchmarkLargeInput()
 	replacer := strings.NewReplacer("hello", "another", "world", "string")
@@ -57,6 +59,11 @@ func BenchmarkStringReplacerBaseline(b *testing.B) {
 	}
 }
 
+// Using multiple times [regexp.ReplaceAllString] should ideally be less
+// efficient than our custom implementation (it is unfortunately not the
+// case).
+// In addition, it does not return the same results, as the string is
+// processed after each replacement is done.
 func BenchmarkNaiveRegexReplacer(b *testing.B) {
 	input := benchmarkLargeInput()
 	reHello := regexp.MustCompile("hello")
@@ -71,6 +78,9 @@ func BenchmarkNaiveRegexReplacer(b *testing.B) {
 	}
 }
 
+// Our custom RexepReplacer. Most of the allocations (and time) are spent
+// in [regexp.FindAllStringSubmatchIndex], ideally we could use an iter-
+// based version of this function (see: golang/go#61902).
 func BenchmarkRegexpReplacer(b *testing.B) {
 	input := benchmarkLargeInput()
 	replacer := NewRegexpReplacer("hello", "another", "world", "string")
