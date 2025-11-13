@@ -72,18 +72,21 @@ whereas help2man is focused on parsing GNU style options.
 gohelp2man does not try to get the version from the \fB\-version\fR flag,
 it must be set with the \fB\-version-string\fR flag.
 .IP (3)
+gohelp2man does not support localised manual pages.
+.IP (4)
 gohelp2man does not support the
 .BI / pattern /\fR
 feature of help2man's include files.
-.IP (4)
-gohelp2man does not support the additional options feature of help2man's include files.
 .IP (5)
+gohelp2man does not support the additional options feature of help2man's include files.
+.IP (6)
 gohelp2man flags do not have shorthands and some flags from help2man are missing:
 .RS
 .TP
 .B \-\-source
 .TP
 .B \-\-locale
+N/A (localised manual pages are not supported)
 .TP
 .B \-\-info\-page
 N/A (info pages are never mentionned)
