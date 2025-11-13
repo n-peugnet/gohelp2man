@@ -362,7 +362,7 @@ This is a section that is not known.
 			}},
 		},
 		{
-			"positionned known section",
+			"positioned known section",
 			"[>DESCRIPTION]\nAppend\n",
 			&Include{Sections: map[string]*Section{
 				"DESCRIPTION": {"DESCRIPTION", "Append", '>'},
