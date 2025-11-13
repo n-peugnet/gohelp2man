@@ -19,18 +19,66 @@
 
 package main
 
-import "testing"
+import (
+	"regexp"
+	"strings"
+	"testing"
+)
 
-func BenchmarkRegexpReplacer(b *testing.B) {
+func benchmarkLargeInput() string {
 	const repetition = 100
 	pattern := []byte("hello world!")
 	buf := make([]byte, 0, len(pattern)*repetition)
 	for i := 0; i < repetition; i++ {
 		buf = append(buf, pattern...)
 	}
-	input := string(buf)
-	replacer := NewRegexpReplacer("hello world", "another string")
+	return string(buf)
+}
+
+func benchmarkLargeExpected() string {
+	const repetition = 100
+	pattern := []byte("another string!")
+	buf := make([]byte, 0, len(pattern)*repetition)
+	for i := 0; i < repetition; i++ {
+		buf = append(buf, pattern...)
+	}
+	return string(buf)
+}
+
+func BenchmarkStringReplacerBaseline(b *testing.B) {
+	input := benchmarkLargeInput()
+	replacer := strings.NewReplacer("hello", "another", "world", "string")
+	var actual string
 	for b.Loop() {
-		replacer.Replace(input)
+		actual = replacer.Replace(input)
+	}
+	if actual != benchmarkLargeExpected() {
+		b.Error("unexpected results")
+	}
+}
+
+func BenchmarkNaiveRegexReplacer(b *testing.B) {
+	input := benchmarkLargeInput()
+	reHello := regexp.MustCompile("hello")
+	reWorld := regexp.MustCompile("world")
+	var actual string
+	for b.Loop() {
+		actual = reHello.ReplaceAllString(input, "another")
+		actual = reWorld.ReplaceAllString(actual, "string")
+	}
+	if actual != benchmarkLargeExpected() {
+		b.Error("unexpected results")
+	}
+}
+
+func BenchmarkRegexpReplacer(b *testing.B) {
+	input := benchmarkLargeInput()
+	replacer := NewRegexpReplacer("hello", "another", "world", "string")
+	var actual string
+	for b.Loop() {
+		actual = replacer.Replace(input)
+	}
+	if actual != benchmarkLargeExpected() {
+		b.Error("unexpected results")
 	}
 }
