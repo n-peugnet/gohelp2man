@@ -89,10 +89,10 @@ gohelp2man flags do not have shorthands and some flags from help2man are missing
 N/A (localised manual pages are not supported)
 .TP
 .B \-\-info\-page
-N/A (info pages are never mentionned)
+N/A (info pages are never mentioned)
 .TP
 .B \-\-no\-info
-N/A (info pages are never mentionned)
+N/A (info pages are never mentioned)
 .TP
 .B \-\-libtool
 N/A (meaningless in the context of Go programs)
