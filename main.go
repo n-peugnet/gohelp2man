@@ -361,9 +361,9 @@ func getHelp(exe string) ([]byte, error) {
 
 // version returns the current version of gohelp2man as found in build info.
 func version() string {
-	v := "(unknown)"
+	v := "(devel)"
 	info, ok := debug.ReadBuildInfo()
-	if ok {
+	if ok && info.Main.Version != "" {
 		v = info.Main.Version
 	}
 	return v
