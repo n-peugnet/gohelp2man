@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, see <https://www.gnu.org/licenses/>.
 
-//go:generate go build
 //go:generate go run . -version-string=v0.7.0 -include=gohelp2man.h2m -output=gohelp2man.1 ./gohelp2man
 
 package main
