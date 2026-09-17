@@ -17,7 +17,18 @@ options.  The format is simple:
 Blocks of verbatim *roff text are inserted into the output either at
 the start of the given
 .BI [ section ]
-(case insensitive).
+(case insensitive), or after a paragraph matching
+.BI / pattern /\fR.
+.PP
+Patterns use the Go regular expression syntax and may additionally be
+followed by the
+.IR i ,
+.I s
+or
+.I m
+modifiers for GNU
+.BR help2man (1)
+compatibility.
 .PP
 Lines before the first section are silently ignored and may be
 used for comments, RCS keywords and the like.
@@ -74,8 +85,10 @@ it must be set with the \fB\-version-string\fR flag.
 .IP (3)
 gohelp2man does not support localised manual pages.
 .IP (4)
-gohelp2man does not support the additional options feature of help2man's include files.
+gohelp2man uses the Go regular expression syntax for the pattern feature.
 .IP (5)
+gohelp2man does not support the additional options feature of help2man's include files.
+.IP (6)
 gohelp2man flags do not have shorthands and some flags from help2man are missing:
 .RS
 .TP
