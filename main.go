@@ -98,7 +98,6 @@ func findKnownSection(s string) (title string, found bool) {
 	switch title {
 	case "OPTIONS", "FLAGS":
 		title = "OPTIONS"
-		fallthrough
 	case "NAME",
 		"SYNOPSIS",
 		"DESCRIPTION",
@@ -109,9 +108,10 @@ func findKnownSection(s string) (title string, found bool) {
 		"REPORTING BUGS",
 		"COPYRIGHT",
 		"SEE ALSO":
-		found = true
+	default:
+		return
 	}
-	return
+	return title, true
 }
 
 type Section struct {
@@ -157,7 +157,7 @@ func (h *Help) parseUsage() {
 	line := h.scanner.Bytes()
 	m := regexUsage.FindSubmatch(line)
 	if m != nil {
-		if bytes.IndexRune(m[2], ' ') != -1 {
+		if bytes.ContainsRune(m[2], ' ') {
 			text.Write(m[2])
 		}
 		for h.scanner.Scan() {
