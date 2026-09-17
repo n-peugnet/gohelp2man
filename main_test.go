@@ -397,6 +397,27 @@ This is a section that is not known.
 	}
 }
 
+func TestParseIncludeErrors(t *testing.T) {
+	cases := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{"pattern invalid regex", "/(unclosed/", `invalid pattern "/(unclosed/"`},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			_, err := parseInclude(strings.NewReader(c.input))
+			if err == nil {
+				t.Fatal("expected an error")
+			}
+			if !strings.Contains(err.Error(), c.expected) {
+				t.Fatalf("expected error to contain %q, got %q", c.expected, err)
+			}
+		})
+	}
+}
+
 func TestWriteSynopsis(t *testing.T) {
 	cases := []struct {
 		name     string

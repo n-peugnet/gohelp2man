@@ -1,3 +1,5 @@
+This line is ignored.
+
 [NAME]
 test-command - this is a test command
 
@@ -18,3 +20,6 @@ This will replace the section from help.
 
 /top level/
 This is appended after the first paragraph of examples.
+
+/THIRD PARAGRAPH/i
+This is the fourth paragraph.
