@@ -54,11 +54,13 @@ Usage: %s [OPTION]... EXECUTABLE
 `
 
 	RegexSection = `^\[([^]]+)\]\s*$`
+	RegexPattern = `^/(.+)/([ims]*)\s*$`
 	RegexUsage   = `[Uu]sage(:| of) (?U:(.*)):?$`
 	RegexUsage2  = `^((\t|\s+or: )(.*)|  ([^-].*))$`
 	RegexHeader  = `^(\w.*):\s*$`
 	RegexFlag    = `^  -((\w)\t(.*)|([-\w]+) (.+)|[-\w]+)$`
 	RegexFUsage  = `^  [^-].*$`
+	RegexPar     = "\n\n+"
 )
 
 var (
@@ -66,11 +68,13 @@ var (
 	debugMode    = os.Getenv("GOH2M_DEBUG") != ""
 	l            = log.New(os.Stderr, Name+": ", 0)
 	regexSection = regexp.MustCompile(RegexSection)
+	regexPattern = regexp.MustCompile(RegexPattern)
 	regexUsage   = regexp.MustCompile(RegexUsage)
 	regexUsage2  = regexp.MustCompile(RegexUsage2)
 	regexHeader  = regexp.MustCompile(RegexHeader)
 	regexFlag    = regexp.MustCompile(RegexFlag)
 	regexFUsage  = regexp.MustCompile(RegexFUsage)
+	regexPar     = regexp.MustCompile(RegexPar)
 )
 
 var KnownSections = [12]string{
@@ -260,13 +264,35 @@ func (h *Help) parse() error {
 	return h.scanner.Err()
 }
 
-// sectionMarkup returns the text of a known section if found, ready to be
-// written on the output man page as is.
-func (h *Help) sectionMarkup(title string) (markup string, found bool) {
+// sectionMarkup returns the text of a known section if found, with the
+// patterns applied if matched, ready to be written on the output man
+// page as is.
+func (h *Help) sectionMarkup(title string, patterns []*Pattern) (markup string, found bool) {
 	s, found := h.Sections[title]
 	b := &strings.Builder{}
 	if found {
-		efprintln(b, s.Text)
+		paragraphs := regexPar.Split(s.Text, -1)
+		for _, par := range paragraphs {
+			first, rest, _ := strings.Cut(par, "\n")
+			header := regexHeader.FindStringSubmatch(first)
+			if header != nil {
+				efprintf(b, ".SS %s:\n", header[1])
+				efprintln(b, rest)
+			} else {
+				b.WriteString(".PP\n")
+				efprintln(b, par)
+			}
+			for _, pattern := range patterns {
+				if !pattern.Regex.MatchString(par) {
+					continue
+				}
+				if !strings.HasPrefix(pattern.Text, ".") {
+					b.WriteString(".PP\n")
+				}
+				b.WriteString(pattern.Text)
+				b.WriteRune('\n')
+			}
+		}
 	}
 	switch title {
 	case "OPTIONS":
@@ -284,9 +310,19 @@ func (h *Help) sectionMarkup(title string) (markup string, found bool) {
 	return
 }
 
+type Pattern struct {
+	Regex *regexp.Regexp
+	Text  string
+}
+
+func (p *Pattern) String() string {
+	return fmt.Sprintf("{%q %q}", p.Regex, p.Text)
+}
+
 type Include struct {
 	Sections      map[string]*Section
 	OtherSections []*Section
+	Patterns      []*Pattern
 }
 
 func readInclude(path string, optional bool) (include *Include, err error) {
@@ -308,11 +344,11 @@ func readInclude(path string, optional bool) (include *Include, err error) {
 func parseInclude(r io.Reader) (*Include, error) {
 	i := &Include{Sections: make(map[string]*Section)}
 
-	var s *Section
+	var dest *string
 	var text strings.Builder
-	finaliseSection := func() {
-		if s != nil {
-			s.Text = strings.TrimSpace(text.String())
+	finaliseText := func() {
+		if dest != nil {
+			*dest = strings.TrimSpace(text.String())
 		}
 		text.Reset()
 	}
@@ -320,10 +356,12 @@ func parseInclude(r io.Reader) (*Include, error) {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		line := scanner.Text()
+		// Parse include section
 		m := regexSection.FindStringSubmatch(line)
 		if m != nil {
-			finaliseSection()
-			s = &Section{}
+			finaliseText()
+			s := &Section{}
+			dest = &s.Text
 			title := m[1]
 			switch r := m[1][0]; r {
 			case '<', '=', '>':
@@ -339,10 +377,30 @@ func parseInclude(r io.Reader) (*Include, error) {
 			}
 			continue
 		}
+		// Parse include pattern
+		m = regexPattern.FindStringSubmatch(line)
+		if m != nil {
+			finaliseText()
+			p := &Pattern{}
+			dest = &p.Text
+			regex := m[1]
+			flags := m[2]
+			if flags != "" {
+				regex = fmt.Sprintf("(?%s)%s", flags, regex)
+			}
+			r, err := regexp.Compile(regex)
+			if err != nil {
+				return nil, fmt.Errorf("invalid pattern %q: %w", m[0], err)
+			}
+			p.Regex = r
+			i.Patterns = append(i.Patterns, p)
+			continue
+
+		}
 		text.WriteString(line)
 		text.WriteString("\n")
 	}
-	finaliseSection()
+	finaliseText()
 	return i, scanner.Err()
 }
 
@@ -390,14 +448,11 @@ func now() time.Time {
 var blockEscaper = NewRegexpReplacer(
 	`-`, `\-`,
 	`\\`, `\(rs`,
-	"\n\n+", "\n.PP\n",
 	`(?m)^\.`, `\&.`,
 	`(?m)^\'`, `\&'`,
 )
 
 var blockFormatter = NewRegexpReplacer(
-	// Format second level headers
-	`(?m)^(?:.PP\n)?(\w.*):\s*$`, `.SS $1:`,
 	// Format man(1) style notation
 	`\b(\w|\w(?:\\-|\w|\.|:)*\w)\((\w+)\)\B`, `\fB$1\fP($2)`,
 	// Format -flag in bold
@@ -488,7 +543,7 @@ func writeSynopsis(w io.Writer, synopsis string) {
 // and h, then they will be in different paragraphs.
 func writeKnownSection(w io.Writer, i *Include, h *Help, title string) {
 	si, foundi := i.Sections[title]
-	sh, foundh := h.sectionMarkup(title)
+	sh, foundh := h.sectionMarkup(title, i.Patterns)
 	if !foundi && !foundh {
 		return
 	}
@@ -506,7 +561,6 @@ func writeKnownSection(w io.Writer, i *Include, h *Help, title string) {
 			fallthrough
 		default:
 			mfprintln(w, si.Text)
-			mfprintln(w, ".PP")
 			mfprint(w, sh)
 		}
 	case foundi:

@@ -3,6 +3,8 @@ This is a basic help message with a single option.
 Examples:
 This becomes a top level section.
 
+This becomes the third paragraph.
+
 Usage of test-command:
   -h	Show help
 

@@ -24,6 +24,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"strings"
 	"syscall"
 	"testing"
@@ -366,6 +367,20 @@ This is a section that is not known.
 			"[>DESCRIPTION]\nAppend\n",
 			&Include{Sections: map[string]*Section{
 				"DESCRIPTION": {"DESCRIPTION", "Append", '>'},
+			}},
+		},
+		{
+			"basic pattern",
+			"/basic/\nText to add.\n",
+			&Include{Sections: map[string]*Section{}, Patterns: []*Pattern{
+				&Pattern{Regex: regexp.MustCompile("basic"), Text: "Text to add."},
+			}},
+		},
+		{
+			"basic pattern with flags",
+			"/basic/ims\nText to add.\n",
+			&Include{Sections: map[string]*Section{}, Patterns: []*Pattern{
+				&Pattern{Regex: regexp.MustCompile("(?ims)basic"), Text: "Text to add."},
 			}},
 		},
 	}

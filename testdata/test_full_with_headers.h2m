@@ -15,3 +15,6 @@ This section must be last.
 
 [=AUTHOR]
 This will replace the section from help.
+
+/top level/
+This is appended after the first paragraph of examples.
