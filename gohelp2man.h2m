@@ -85,7 +85,9 @@ it must be set with the \fB\-version-string\fR flag.
 .IP (3)
 gohelp2man does not support localised manual pages.
 .IP (4)
-gohelp2man uses the Go regular expression syntax for the pattern feature.
+gohelp2man uses the Go regular expression syntax for the
+.BI / pattern /
+feature.
 .IP (5)
 gohelp2man does not support the additional options feature of help2man's include files.
 .IP (6)
